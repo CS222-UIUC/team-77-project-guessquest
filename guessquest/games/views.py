@@ -17,9 +17,6 @@ def start_game(request):
     game = TemperatureGameSession.objects.create(player=player)
     return JsonResponse({"game_id" : game.id})
 
-
-
-
 # Utility Functions
 
 def calculate_score(actual_temp, user_guess):
