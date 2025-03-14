@@ -3,16 +3,21 @@ from django.utils.timezone import now
 #TODO LEADERBOARD
 
 
-class User(models.Model):
+class Player(models.Model):
     user_name = models.CharField(max_length=15)
-    high_score = models.FloatField()
+    high_score = models.FloatField(default=0)
+    
+    def update_high_score(self, score):
+        if score > self.high_score:
+            self.score = score
+        
     
     # returns username as a string
     def __str__(self):
         return self.user_name
 
-class TemperatureGame(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+class TemperatureGameSession(models.Model):
+    user = models.ForeignKey(Player, on_delete=models.CASCADE)
     total_score = models.IntegerField(default=0)
     questions_left = models.IntegerField(default=5)
     time_created = models.DateTimeField(auto_now_add=True)
@@ -29,7 +34,7 @@ class TemperatureGame(models.Model):
         return self.questions_left == 0
         
 class TemperatureQuestion(models.Model):
-    game = models.ForeignKey(TemperatureGame, related_name="questions", on_delete=models.CASCADE)
+    game = models.ForeignKey(TemperatureGameSession, related_name="questions", on_delete=models.CASCADE)
     city = models.CharField(max_length=50)
     user_guess = models.FloatField(null=False, blank=False)
     actual_temperature = models.FloatField(null=False, blank=False)
