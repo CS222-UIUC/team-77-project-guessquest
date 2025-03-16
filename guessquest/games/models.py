@@ -4,7 +4,7 @@ from django.utils.timezone import now
 
 
 class Player(models.Model):
-    user_name = models.CharField(max_length=15)
+    username = models.CharField(max_length=15)
     high_score = models.FloatField(default=0)
     
     def update_high_score(self, score):
@@ -14,19 +14,19 @@ class Player(models.Model):
     
     # returns username as a string
     def __str__(self):
-        return self.user_name
+        return self.username
 
 class TemperatureGameSession(models.Model):
-    user = models.ForeignKey(Player, on_delete=models.CASCADE)
+    player = models.ForeignKey(Player, on_delete=models.CASCADE)
     total_score = models.IntegerField(default=0)
     questions_left = models.IntegerField(default=5)
     time_created = models.DateTimeField(auto_now_add=True)
-    game_status = models.CharField(max_length=10, choices=[("active,", "Active"), ("completed", "Completed")], default='active')
+    game_status = models.CharField(max_length=10, choices=[("active", "Active"), ("completed", "Completed")], default='active')
     
     def update_score(self, points):
         self.total_score += points
         self.questions_left -= 1
-        if self.is_game_over:
+        if self.is_game_over():
             self.game_status = "completed"
         self.save()
         
