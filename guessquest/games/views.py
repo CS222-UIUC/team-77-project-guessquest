@@ -10,12 +10,14 @@ def sign_in(request):
     elif request.method == "POST":
         username = request.POST.get("username")
         player, created = Player.objects.get_or_create(username=username)
-        return redirect('start_temp', player_id=player.id)
+        return redirect('start_temp', player_id=player.id) # Will change this to game_selection screen
 
 def start_game(request, player_id):
+    if request.method == "GET":
+        return render(request, "weather_game.html")
     player = get_object_or_404(Player, id=player_id)
     game = TemperatureGameSession.objects.create(player=player)
-    return JsonResponse({"game_id" : game.id})
+    pass # will redirect to prompt question in the future
 
 # Utility Functions
 
