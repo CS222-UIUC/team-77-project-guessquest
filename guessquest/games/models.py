@@ -10,6 +10,7 @@ class Player(models.Model):
     def update_high_score(self, score):
         if score > self.high_score:
             self.high_score = score
+
         
     
     # returns username as a string
