@@ -21,4 +21,5 @@ from games import views
 urlpatterns = [
     path('', views.sign_in, name='sign_in'),
     path('temperature/<int:player_id>/', views.start_game, name='start_temp'),
+    path('games/', views.game_selection, name='game_selection'),
 ]
