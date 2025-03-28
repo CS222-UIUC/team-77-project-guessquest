@@ -22,6 +22,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-$srr^y3w!2k@5i3q4*3nv)k+8ow@9*38b3rs^rv)*!t=1491!*'
 
+OPENWEATHER_API_KEY = "af4a8c03c5f69f1240eca838d6a968ad"
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
