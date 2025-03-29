@@ -9,3 +9,4 @@ class WeatherApiTest(TestCase):
         self.assertTrue(40.0 < lat < 40.2)
         self.assertTrue(-88.3 < lon < -88.2)
         print(f"{lat}, {lon}")
+    
