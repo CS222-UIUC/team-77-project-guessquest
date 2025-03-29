@@ -18,7 +18,7 @@ function storeName(event) {
 }
 
 function selectionPage() {
-    window.location.href = "/temperature${player}"
+    window.location.href = "default.html"
 }
 
 document.getElementById('player-form').addEventListener('submit', storeName);
