@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
 	<head>
@@ -43,7 +44,7 @@
 		</div>
 		<br>
 		<div class="column">
-    			<a href="default.html" class="button">Weather Game</a>
+    			<a href="{% url 'start_temp' player_id=player.id %}" class="button">Weather Game</a>
   		</div>
 
 		<div class="column">

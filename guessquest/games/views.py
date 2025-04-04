@@ -10,7 +10,7 @@ def sign_in(request):
     elif request.method == "POST":
         username = request.POST.get("username")
         player, created = Player.objects.get_or_create(username=username)
-        return redirect('start_temp', player_id=player.id) # Will change this to game_selection screen
+        return redirect(f'/games?player_id={player.id}') # Will change this to game_selection screen
 
 def start_game(request, player_id):
     if request.method == "GET":
@@ -19,11 +19,6 @@ def start_game(request, player_id):
     game = TemperatureGameSession.objects.create(player=player)
     pass # will redirect to prompt question in the future
 
-# Utility Functions
-
-def calculate_score(actual_temp, user_guess):
-    error = abs(actual_temp - user_guess)
-    return max(0, 250 - int(error * 10))
 
 # view for game selection page
 def game_selection(request):
@@ -42,7 +37,7 @@ def game_selection(request):
         return JsonResponse({"error": "Player not found"}, status=404)
     
     # Render the game selection template with player information
-    return render(request, 'games/game_selection.html', {
+    return render(request, 'game_selection.html', {
         'player': player,
         'available_games': [
             {
