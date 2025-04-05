@@ -19,8 +19,9 @@ def start_game(request, player_id):
     elif request.method == "POST":
         game = TemperatureGameSession.objects.create(player=player)
         return JsonResponse({"game_id": game.id})
+
 def get_next_question(request):
-    game_id = request.GET.get("game_id")
+    game_id = request.POST.get("game_id")
     if not game_id:
         return JsonResponse({"error": "Missing Game ID"}, status=400)
     game = get_object_or_404(TemperatureGameSession, id=game_id)
@@ -32,6 +33,7 @@ def get_next_question(request):
         "city": city,
         "question_id": question.id
     })
+    
 def submit_guess(request):
     question_id = request.GET.get("question_id")
     if not question_id:
