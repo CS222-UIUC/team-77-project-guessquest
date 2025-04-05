@@ -2,8 +2,10 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 import json
 from models import Player, TemperatureGameSession, TemperatureQuestion
+from django.views.decorators.http import require_POST
 from django.http import HttpResponse
 import services
+@require_POST
 def sign_in(request):
     if request.method == "POST":
         username = request.POST.get("username")
@@ -11,7 +13,7 @@ def sign_in(request):
             return JsonResponse({"error": "Username not found."}, status=400)
         player, created = Player.objects.get_or_create(username=username)
         return redirect(f'/games?player_id={player.id}')
-
+@require_POST
 def start_game(request, player_id):
     player = get_object_or_404(Player, id=player_id)
     if request.method == "GET":
@@ -19,7 +21,7 @@ def start_game(request, player_id):
     elif request.method == "POST":
         game = TemperatureGameSession.objects.create(player=player)
         return JsonResponse({"game_id": game.id})
-
+@require_POST
 def get_next_question(request):
     game_id = request.POST.get("game_id")
     if not game_id:
@@ -33,7 +35,7 @@ def get_next_question(request):
         "city": city,
         "question_id": question.id
     })
-    
+@require_POST
 def submit_guess(request):
     question_id = request.GET.get("question_id")
     if not question_id:
