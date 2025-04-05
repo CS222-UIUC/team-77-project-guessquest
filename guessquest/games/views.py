@@ -7,20 +7,19 @@ from django.http import HttpResponse
 import services
 @require_POST
 def sign_in(request):
-    if request.method == "POST":
-        username = request.POST.get("username")
-        if not username:
-            return JsonResponse({"error": "Username not found."}, status=400)
-        player, created = Player.objects.get_or_create(username=username)
-        return redirect(f'/games?player_id={player.id}')
+    username = request.POST.get("username")
+    if not username:
+        return JsonResponse({"error": "Username not found."}, status=400)
+    player, created = Player.objects.get_or_create(username=username)
+    return JsonResponse({"player_id": player.id, "redirect_url": f'/games?player_id={player.id}'})
 @require_POST
-def start_game(request, player_id):
+def start_game(request):
+    player_id = request.POST.get("player_id")
+    if not player_id:
+        return JsonResponse({"error" : "Missing Player ID"})
     player = get_object_or_404(Player, id=player_id)
-    if request.method == "GET":
-        return render(request, "weather_game.html")
-    elif request.method == "POST":
-        game = TemperatureGameSession.objects.create(player=player)
-        return JsonResponse({"game_id": game.id})
+    game = TemperatureGameSession.objects.create(player=player)
+    return JsonResponse({"game_id": game.id})
 @require_POST
 def get_next_question(request):
     game_id = request.POST.get("game_id")
@@ -37,10 +36,10 @@ def get_next_question(request):
     })
 @require_POST
 def submit_guess(request):
-    question_id = request.GET.get("question_id")
+    question_id = request.POST.get("question_id")
     if not question_id:
         return JsonResponse({"error" : "Question ID is missing"})
-    guess = request.GET.get("guess")
+    guess = request.POST.get("guess")
     if not guess:
         return JsonResponse({"error": "User guess is missing"})
     question = get_object_or_404(TemperatureQuestion, id=question_id)
