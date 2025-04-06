@@ -1,0 +1,50 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Home Page</title>
+    <style type="text/css">
+      h1 {
+        font-family: "Nimbus Mono PS", "Courier New", monospace;
+        font-weight: 600;
+      }
+      .header {
+        padding: 20px;
+        text-align: center;
+      }
+      .column {
+        float: left;
+        width: 30%;
+        padding: 20px;
+        text-align: center;
+      }
+      .row::after {
+        content: "";
+        display: table;
+        clear: both;
+      }
+      .button {
+        background-color: #bbd4fc;
+        border: none;
+        padding: 30px 36px;
+        text-align: center;
+        color: black;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        font-family: "Nimbus Mono PS", "Courier New", monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Choose Game to Play!</h1>
+    </div>
+    {% for game in available_games %}
+    <br />
+    <div class="column">
+      <a href="{{game.url}}" class="button">{{game.name}}</a>
+    </div>
+    {% endfor %}
+  </body>
+</html>
