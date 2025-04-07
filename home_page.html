@@ -1,0 +1,60 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Home Page</title>
+		<style>
+		h1 {
+			font-family: "Courier New", Courier, monospace;
+			font-weight: 600;
+		}
+		.header {
+			padding: 20px;
+			text-align: center;
+		}
+		.column {
+			float: left;
+			width: 30%;
+			padding: 20px;
+			text-align: center;
+		}
+		.row::after {
+			content: "";
+			display: table;
+			clear: both;
+		}
+		.button {
+			padding: 20px;
+			font-size: 20px;
+			margin: 10px;
+			cursor: pointer;
+			background-color: white;
+			border: 2px solid black;
+			font-family: "Courier New", Courier, monospace;
+			text-decoration: none;
+			color: black;
+		}
+		</style>
+
+	</head>
+	<body>
+		<div class="header">
+			<h1>Choose Game to Play!</h1>
+		</div>
+		<br>
+		<div class="column">
+    			<a href="default.html" class="button">Weather Game</a>
+  		</div>
+
+		<div class="column">
+    			<a href="default.html" class="button">Trivia Game</a>
+  		</div>
+
+		<div class="column">
+    			<a href="default.html" class="button">Spotify Game</a>
+  		</div>
+		
+	</body>
+</html>
