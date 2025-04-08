@@ -17,8 +17,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from games import views as game_views
+from .views import TriviaAPIView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('games.urls')),
+    path('api/trivia/', TriviaAPIView.as_view(), name='trivia'),
 ]
