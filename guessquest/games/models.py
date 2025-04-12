@@ -45,9 +45,3 @@ class TemperatureQuestion(models.Model):
     def __str__(self):
         return f"What is the current temperature of {self.city}?"
     
-    def check_guess(self): # calculates and returns points
-        #scoring algorithm subject to change
-        error = abs(self.actual_temperature - self.user_guess)
-        points = max(0, 250 - int(error * 10))
-    
-        return points

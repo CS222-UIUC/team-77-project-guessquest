@@ -1,28 +1,66 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 import json
-from .models import Player, TemperatureGameSession
+from .models import Player, TemperatureGameSession, TemperatureQuestion
+from django.views.decorators.http import require_POST
 from django.http import HttpResponse
+from . import services
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .trivia_service import TriviaService
 # Create your views here.
+@require_POST
 def sign_in(request):
-    if request.method == "GET":
-        return render (request, "sign_in.html")
-    elif request.method == "POST":
-        username = request.POST.get("username")
-        player, created = Player.objects.get_or_create(username=username)
-        return redirect(f'/games?player_id={player.id}') # Will change this to game_selection screen
-
-def start_game(request, player_id):
-    if request.method == "GET":
-        return render(request, "weather_game.html")
+    username = request.POST.get("username")
+    if not username:
+        return JsonResponse({"error": "Username not found."}, status=400)
+    player, created = Player.objects.get_or_create(username=username)
+    return JsonResponse({"player_id": player.id, "redirect_url": f'/games?player_id={player.id}'})
+@require_POST
+def start_game(request):
+    player_id = request.POST.get("player_id")
+    if not player_id:
+        return JsonResponse({"error" : "Missing Player ID"})
     player = get_object_or_404(Player, id=player_id)
     game = TemperatureGameSession.objects.create(player=player)
-    pass # will redirect to prompt question in the future
-
-
+    return JsonResponse({"game_id": game.id})
+@require_POST
+def get_next_question(request):
+    game_id = request.POST.get("game_id")
+    if not game_id:
+        return JsonResponse({"error": "Missing Game ID"}, status=400)
+    game = get_object_or_404(TemperatureGameSession, id=game_id)
+    # will need to implement get random city logic. Hardcoding for now
+    city = "Champaign"
+    correct_temp = services.get_city_temperature()
+    question = TemperatureQuestion.objects.create(city=city, game=game, actual_temperature=correct_temp)
+    return JsonResponse({
+        "city": city,
+        "question_id": question.id
+    })
+@require_POST
+def submit_guess(request):
+    question_id = request.POST.get("question_id")
+    if not question_id:
+        return JsonResponse({"error" : "Question ID is missing"})
+    guess = request.POST.get("guess")
+    if not guess:
+        return JsonResponse({"error": "User guess is missing"})
+    question = get_object_or_404(TemperatureQuestion, id=question_id)
+    
+    question.user_guess = guess
+    question.save()
+    
+    correct_temp = question.actual_temperature
+    score = services.calculate_score(guess, correct_temp)
+    
+    game = question.game
+    game.update_score(score)
+    game.save()
+    
+    return JsonResponse({"correct_temp" : correct_temp, "score" : score, "total_score" : game.total_score,
+                         "questions_left" : game.questions_left, "game_status" : game.game_status})
+    
 # view for game selection page
 def game_selection(request):
     """
