@@ -1,10 +1,10 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 import json
-from models import Player, TemperatureGameSession, TemperatureQuestion
+from .models import Player, TemperatureGameSession, TemperatureQuestion
 from django.views.decorators.http import require_POST
 from django.http import HttpResponse
-import services
+from . import services
 @require_POST
 def sign_in(request):
     username = request.POST.get("username")
