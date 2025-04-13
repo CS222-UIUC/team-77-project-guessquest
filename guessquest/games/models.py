@@ -12,8 +12,6 @@ class Player(models.Model):
         if score > self.high_score:
             self.high_score = score
 
-        
-    
     # returns username as a string
     def __str__(self):
         return self.username
@@ -33,13 +31,15 @@ class TemperatureGameSession(models.Model):
         return self.questions.last()
     def update_score(self, points):
         self.score += points
-        self.questions_left -= 1
     def end_game(self):
         self.game_status = "completed"
         self.player.update_high_score(self.score)
         self.save()
+        self.player.save()
         self.delete()
     def no_questions_left(self):
+        if self.questions_left == 0:
+            self.game_status = 'completed'
         return self.questions_left == 0
         
 class TemperatureQuestion(models.Model):

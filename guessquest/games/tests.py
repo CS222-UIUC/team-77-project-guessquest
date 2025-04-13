@@ -4,6 +4,7 @@ from django.utils import timezone
 from datetime import timedelta
 import json
 from .models import Player, TemperatureGameSession, TemperatureQuestion
+from . import services
 
 class PlayerModelTests(TestCase):
     def test_create_player(self):
@@ -33,7 +34,7 @@ class TemperatureGameSessionTests(TestCase):
         """Test creating a game session with default values"""
         game = TemperatureGameSession.objects.create(player=self.player)
         self.assertEqual(game.player.username, "testuser")
-        self.assertEqual(game.total_score, 0)
+        self.assertEqual(game.score, 0)
         self.assertEqual(game.questions_left, 5)
         self.assertEqual(game.game_status, "active")
         self.assertIsNotNone(game.time_created)
@@ -42,25 +43,26 @@ class TemperatureGameSessionTests(TestCase):
         """Test updating score and questions_left"""
         game = TemperatureGameSession.objects.create(player=self.player)
         game.update_score(100)
-        self.assertEqual(game.total_score, 100)
-        self.assertEqual(game.questions_left, 4)
+        self.assertEqual(game.score, 100)
         self.assertEqual(game.game_status, "active")
 
     def test_game_over(self):
         """Test that game status changes when no questions are left"""
         game = TemperatureGameSession.objects.create(player=self.player, questions_left=1)
         game.update_score(100)
-        self.assertEqual(game.total_score, 100)
+        game.questions_left -= 1
+        self.assertEqual(game.no_questions_left)
+        self.assertEqual(game.score, 100)
         self.assertEqual(game.questions_left, 0)
         self.assertEqual(game.game_status, "completed")
 
-    def test_is_game_over(self):
-        """Test the is_game_over method"""
+    def test_no_questions_left(self):
+        """Test the no_questions_left method"""
         game = TemperatureGameSession.objects.create(player=self.player)
-        self.assertFalse(game.is_game_over())
+        self.assertFalse(game.no_questions_left())
         
         game.questions_left = 0
-        self.assertTrue(game.is_game_over())
+        self.assertTrue(game.no_questions_left())
 
 class TemperatureQuestionTests(TestCase):
     def setUp(self):
@@ -137,7 +139,7 @@ class ViewsTests(TestCase):
         """Test GET request to sign_in view"""
         response = self.client.get(reverse('sign_in'))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'sign_in.html')
+        self.assertTemplateUsed(response, 'startScreen.html')
         
     def test_sign_in_post_existing_user(self):
         """Test POST request to sign_in with existing username"""
@@ -170,13 +172,13 @@ class ViewsTests(TestCase):
             fetch_redirect_response=False
         )
         
-    def test_start_game_get(self):
+    def test_start_weather_game_get(self):
         """Test GET request to start_game view"""
         response = self.client.get(
-            reverse('start_temp', kwargs={'player_id': self.test_player.id})
+            reverse('weather_game', kwargs={'player_id': self.test_player.id})
         )
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'weather_game.html')
+        self.assertTemplateUsed(response, 'weatherGame.html')
         
     def test_calculate_score(self):
         """Test the calculate_score utility function"""
@@ -237,13 +239,11 @@ class IntegrationTests(TestCase):
                 user_guess=guesses[i],
                 actual_temperature=actuals[i]
             )
-            
-            points = question.check_guess()
-            total_points += points
-            game.update_score(points)
+            total_points += services.calculate_score()
+            services.process_weather_guess(game, question, question.user_guess)
         
         # Verify final state
-        self.assertEqual(game.total_score, total_points)
+        self.assertEqual(game.score, total_points)
         self.assertEqual(game.questions_left, 0)
         self.assertEqual(game.game_status, "completed")
         

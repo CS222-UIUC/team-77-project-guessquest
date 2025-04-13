@@ -41,5 +41,6 @@ def calculate_score(actual_temp, user_guess):
 def process_weather_guess(game, question, guess):
     score = calculate_score(question.actual_temperature, guess)
     game.update_score(score)
+    game.questions_left -= 1
     game.save()
     
