@@ -4,59 +4,75 @@ import json
 from .models import Player, TemperatureGameSession, TemperatureQuestion
 from django.views.decorators.http import require_POST
 from django.http import HttpResponse
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .trivia_service import TriviaService
+import random
+import requests
 from . import services
-@require_POST
+# Create your views here.
+
 def sign_in(request):
-    username = request.POST.get("username")
-    if not username:
-        return JsonResponse({"error": "Username not found."}, status=400)
-    player, created = Player.objects.get_or_create(username=username)
-    return JsonResponse({"player_id": player.id, "redirect_url": f'/games?player_id={player.id}'})
-@require_POST
-def start_game(request):
-    player_id = request.POST.get("player_id")
-    if not player_id:
-        return JsonResponse({"error" : "Missing Player ID"})
+    if request.method == "GET":
+        return render (request, "startScreen.html")
+    elif request.method == "POST":
+        username = request.POST.get("playername")
+        player, created = Player.objects.get_or_create(username=username)
+        return redirect(f'/games?player_id={player.id}')
+
+def weather_game(request, player_id):
+    if request.method == "GET":
+        player = get_object_or_404(Player, id=player_id)
+        game = TemperatureGameSession.objects.create(player=player)
+        question = game.create_question()
+        request.session['game_id'] = game.id
+        request.session['question_id'] = question.id
+        game.save()
+        question.save()
+        info = {
+            'score': game.score,
+            'questionNum': 5 - game.questions_left,
+            'city': question.city,
+            'actualTemperature': question.actual_temperature,
+        }
+        return render(request, "weatherGame.html", info)
+    elif request.method == "POST":
+        game_id = request.session.get('game_id')
+        question_id = request.session.get('question_id')
+        guess = int(request.POST.get('guess'))
+
+        player = get_object_or_404(Player, id=player_id)
+        game = get_object_or_404(TemperatureGameSession, id=game_id)
+        question = get_object_or_404(TemperatureQuestion, id=question_id)
+        
+        services.process_weather_guess(game, question, guess)
+        
+        if game.no_questions_left():
+            game.end_game()
+            return redirect(f'/trivia/{player_id}')
+        question = game.create_question()
+        request.session['question_id'] = question.id
+        game.save()
+        question.save()
+        info = {
+            'score': game.score,
+            'questionsNum': 5 - game.questions_left,
+            'city': question.city,
+            'actualTemperature' : question.actual_temperature
+        }
+        return render(request, "weatherGame.html", info)
+
+def trivia_game(request, player_id):
+    if request.method == "GET":
+        return render(request, "triviaGame.html")
     player = get_object_or_404(Player, id=player_id)
-    game = TemperatureGameSession.objects.create(player=player)
-    return JsonResponse({"game_id": game.id})
-@require_POST
-def get_next_question(request):
-    game_id = request.POST.get("game_id")
-    if not game_id:
-        return JsonResponse({"error": "Missing Game ID"}, status=400)
-    game = get_object_or_404(TemperatureGameSession, id=game_id)
-    # will need to implement get random city logic. Hardcoding for now
-    city = "Champaign"
-    correct_temp = services.get_city_temperature()
-    question = TemperatureQuestion.objects.create(city=city, game=game, actual_temperature=correct_temp)
-    return JsonResponse({
-        "city": city,
-        "question_id": question.id
-    })
-@require_POST
-def submit_guess(request):
-    question_id = request.POST.get("question_id")
-    if not question_id:
-        return JsonResponse({"error" : "Question ID is missing"})
-    guess = request.POST.get("guess")
-    if not guess:
-        return JsonResponse({"error": "User guess is missing"})
-    question = get_object_or_404(TemperatureQuestion, id=question_id)
-    
-    question.user_guess = guess
-    question.save()
-    
-    correct_temp = question.actual_temperature
-    score = services.calculate_score(guess, correct_temp)
-    
-    game = question.game
-    game.update_score(score)
-    game.save()
-    
-    return JsonResponse({"correct_temp" : correct_temp, "score" : score, "total_score" : game.total_score,
-                         "questions_left" : game.questions_left, "game_status" : game.game_status})
-    
+
+def spotify_game(request, player_id):
+    if request.method == "GET":
+        return render(request, "spotify_game.html")
+    player = get_object_or_404(Player, id=player_id)
+
+
 # view for game selection page
 def game_selection(request):
     """
@@ -79,10 +95,39 @@ def game_selection(request):
         'available_games': [
             {
                 'id': 'temperature',
-                'name': 'Temperature Guessing Game',
+                'name': 'Weather Game',
                 'description': 'Guess the correct temperature and earn points!',
-                'url': f'/temperature/?player_id={player_id}'
+                'url': f'/temperature/{player_id}'
             },
-            # Add more games here as we develop them
+            {
+                'id': 'trivia',
+                'name': 'Trivia Game',
+                'description': 'Trivia Game!',
+                'url': f'/trivia/{player_id}'
+            },
+            {
+                'id': 'spotify',
+                'name': 'Spotify Game',
+                'description': 'Spotify Game!',
+                'url': f'/spotify/{player_id}'
+            }
         ]
     })
+
+class TriviaAPIView(APIView):
+    def get(self, request):
+        # Get parameters from request
+        amount = request.query_params.get('amount', 10)
+        category = request.query_params.get('category', None)
+        difficulty = request.query_params.get('difficulty', None)
+        question_type = request.query_params.get('type', None)
+        
+        # Fetch questions from the service
+        questions = TriviaService.get_questions(
+            amount=amount, 
+            category=category,
+            difficulty=difficulty,
+            question_type=question_type
+        )
+        
+        return Response(questions)

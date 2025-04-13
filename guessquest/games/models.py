@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.timezone import now
+from . import services
 #TODO LEADERBOARD
 
 
@@ -19,25 +20,32 @@ class Player(models.Model):
 
 class TemperatureGameSession(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
-    total_score = models.IntegerField(default=0)
+    score = models.IntegerField(default=0)
     questions_left = models.IntegerField(default=5)
     time_created = models.DateTimeField(auto_now_add=True)
     game_status = models.CharField(max_length=10, choices=[("active", "Active"), ("completed", "Completed")], default='active')
     
+    def create_question(self) :
+        city = services.get_random_city()
+        actual_temperature = services.get_city_temperature(city)
+        return TemperatureQuestion.objects.create(game=self, city=city, actual_temperature=actual_temperature)
+    def get_latest_question(self):
+        return self.questions.last()
     def update_score(self, points):
-        self.total_score += points
+        self.score += points
         self.questions_left -= 1
-        if self.is_game_over():
-            self.game_status = "completed"
+    def end_game(self):
+        self.game_status = "completed"
+        self.player.update_high_score(self.score)
         self.save()
-        
-    def is_game_over(self):
+        self.delete()
+    def no_questions_left(self):
         return self.questions_left == 0
         
 class TemperatureQuestion(models.Model):
     game = models.ForeignKey(TemperatureGameSession, related_name="questions", on_delete=models.CASCADE)
     city = models.CharField(max_length=50)
-    user_guess = models.FloatField(null=False, blank=False)
+    user_guess = models.FloatField(null=True, blank=True)
     actual_temperature = models.FloatField(null=False, blank=False)
     time_created = models.DateTimeField(auto_now_add=True)
     time_limit = models.IntegerField(default=30) # 30 seconds

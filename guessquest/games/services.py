@@ -1,6 +1,17 @@
 import requests
 from django.conf import settings
+from . import models
 import json
+import random
+
+# Global 
+cities = [
+    "New York", "Paris", "Tokyo", "London", "Los Angeles", "Bangkok", 
+    "San Francisco", "Barcelona", "Shanghai", "Dubai", "Vienna", 
+    "Rome", "Berlin", "Chicago", "Houston", "Phoenix", "Philadelphia", 
+    "San Antonio", "San Diego", "Dallas", "Austin", "Seattle", 
+    "Denver", "Boston", "Las Vegas"
+]
 
 class CityNotFoundError(Exception):
     pass
@@ -21,7 +32,14 @@ def city_to_coords(city) :
         raise CityNotFoundError(f"The city, {city} was not found")
     data = response.json()
     return data[0]["lat"], data[0]["lon"]
+def get_random_city() :
+    return random.choice(cities)
 # Temperature scoring algorithm    
 def calculate_score(actual_temp, user_guess):
     error = abs(actual_temp - user_guess)
     return max(0, 250 - int(error * 10))
+def process_weather_guess(game, question, guess):
+    score = calculate_score(question.actual_temperature, guess)
+    game.update_score(score)
+    game.save()
+    
