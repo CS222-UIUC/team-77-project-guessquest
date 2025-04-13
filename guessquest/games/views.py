@@ -9,9 +9,9 @@ from .trivia_service import TriviaService
 # Create your views here.
 def sign_in(request):
     if request.method == "GET":
-        return render (request, "sign_in.html")
+        return render (request, "startScreen.html")
     elif request.method == "POST":
-        username = request.POST.get("username")
+        username = request.POST.get("playername")
         player, created = Player.objects.get_or_create(username=username)
         return redirect(f'/games?player_id={player.id}') # Will change this to game_selection screen
 
