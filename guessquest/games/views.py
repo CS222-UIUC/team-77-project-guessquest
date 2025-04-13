@@ -6,7 +6,11 @@ from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .trivia_service import TriviaService
+import random
+import requests
+from .services import calculate_score
 # Create your views here.
+cities = ["New York", "Pairs", "Tokyo", "London", "Los Angeles", "Bangkok", "San Francisco", "Barcelona", "Shanghai", "Dubai", "Vienna", "Rome", "Berlin"]
 def sign_in(request):
     if request.method == "GET":
         return render (request, "startScreen.html")
@@ -17,10 +21,37 @@ def sign_in(request):
 
 def weather_game(request, player_id):
     if request.method == "GET":
-        return render(request, "weatherGame.html")
-    player = get_object_or_404(Player, id=player_id)
-    game = TemperatureGameSession.objects.create(player=player)
-    pass # will redirect to prompt question in the future
+        request.session['score'] = 0
+        request.session['questionNum'] = 1
+        request.session['city'] = random.choice(cities)
+        info = {
+            'score': request.session['score'],
+            'questionNum': request.session['questionNum'],
+            'city': request.session['city']
+        }
+        return render(request, "weatherGame.html", info)
+    elif request.method == "POST":
+        
+        guess = int(request.POST.get('guess'))
+        city = request.session['city']
+        url = f'http://api.openweathermap.org/data/2.5/weather?q={city}&appid={OPENWEATHER_API_KEY}&units=metric'
+        response = requests.get(url)
+        weather_data = response.json()
+        answer = int(weather_data['main']['temp'])
+        print(weather_data)
+        score = calculate_score(answer, guess)
+
+        request.session['score'] += score
+        request.session['questionNum'] += 1
+        request.session['city'] = random.choice(cities)
+        info = {
+            'score': request.session['score'],
+            'questionNum': request.session['questionNum'],
+            'city': request.session['city']
+        }
+        if(request.session['questionNum'] >= 3):
+            return redirect(trivia_game)
+        return render(request, "weatherGame.html", info)
 
 def trivia_game(request, player_id):
     if request.method == "GET":
