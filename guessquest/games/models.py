@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils.timezone import now
-from . import services
+from . import weather_services
 #TODO LEADERBOARD
 
 
@@ -24,9 +24,11 @@ class TemperatureGameSession(models.Model):
     game_status = models.CharField(max_length=10, choices=[("active", "Active"), ("completed", "Completed")], default='active')
     
     def create_question(self) :
-        city = services.get_random_city()
-        actual_temperature = services.get_city_temperature(city)
-        return TemperatureQuestion.objects.create(game=self, city=city, actual_temperature=actual_temperature)
+        city = weather_services.get_random_city()
+        actual_temperature = weather_services.get_city_temperature(city)
+        question = TemperatureQuestion.objects.create(game=self, city=city, actual_temperature=actual_temperature)
+        self.questions_left -= 1
+        return question
     def get_latest_question(self):
         return self.questions.last()
     def update_score(self, points):

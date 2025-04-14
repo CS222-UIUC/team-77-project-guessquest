@@ -4,7 +4,7 @@ from django.utils import timezone
 from datetime import timedelta
 import json
 from .models import Player, TemperatureGameSession, TemperatureQuestion
-from . import services
+from . import weather_services
 
 class PlayerModelTests(TestCase):
     def test_create_player(self):
@@ -239,8 +239,8 @@ class IntegrationTests(TestCase):
                 user_guess=guesses[i],
                 actual_temperature=actuals[i]
             )
-            total_points += services.calculate_score()
-            services.process_weather_guess(game, question, question.user_guess)
+            total_points += weather_services.calculate_score()
+            weather_services.process_weather_guess(game, question, question.user_guess)
         
         # Verify final state
         self.assertEqual(game.score, total_points)

@@ -9,9 +9,8 @@ from rest_framework.response import Response
 from .trivia_service import TriviaService
 import random
 import requests
-from . import services
+from . import weather_services
 # Create your views here.
-
 def sign_in(request):
     if request.method == "GET":
         return render (request, "startScreen.html")
@@ -19,49 +18,24 @@ def sign_in(request):
         username = request.POST.get("playername")
         player, created = Player.objects.get_or_create(username=username)
         return redirect(f'/games?player_id={player.id}')
-
 def weather_game(request, player_id):
     if request.method == "GET":
         player = get_object_or_404(Player, id=player_id)
-        game = TemperatureGameSession.objects.create(player=player)
-        question = game.create_question()
-        request.session['game_id'] = game.id
-        request.session['question_id'] = question.id
-        game.save()
-        question.save()
-        info = {
-            'score': game.score,
-            'questionNum': 5 - game.questions_left,
-            'city': question.city,
-            'actualTemperature': question.actual_temperature,
-        }
+        game, question = weather_services.create_weather_game(player)
+        weather_services.store_weather_session_data(request, player, game, question)
+        info = weather_services.build_game_context(game.score, game.questions_left, question.city, question.actual_temperature) 
         return render(request, "weatherGame.html", info)
     elif request.method == "POST":
-        game_id = request.session.get('game_id')
-        question_id = request.session.get('question_id')
         guess = int(request.POST.get('guess'))
-
-        player = get_object_or_404(Player, id=player_id)
-        game = get_object_or_404(TemperatureGameSession, id=game_id)
-        question = get_object_or_404(TemperatureQuestion, id=question_id)
-        
-        services.process_weather_guess(game, question, guess)
-        
+        player, game, question = weather_services.get_weather_post_data(request)
+        weather_services.process_weather_guess(game, question, guess)
         if game.no_questions_left():
             game.end_game()
             return redirect(f'/trivia/{player_id}')
-        question = game.create_question()
-        request.session['question_id'] = question.id
-        game.save()
-        question.save()
-        info = {
-            'score': game.score,
-            'questionsNum': 5 - game.questions_left,
-            'city': question.city,
-            'actualTemperature' : question.actual_temperature
-        }
+        next_question = game.create_question()
+        weather_services.store_weather_session_question(request, next_question)
+        info = weather_services.build_game_context(game.score, game.questions_left, next_question.city, next_question.actual_temperature) 
         return render(request, "weatherGame.html", info)
-
 def trivia_game(request, player_id):
     if request.method == "GET":
         return render(request, "triviaGame.html")
