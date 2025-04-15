@@ -15,12 +15,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest
+          pip install django pytest pytest-django
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           
-      - name: List directory structure
-        run: find . -type f -name "*.py" | sort
-        
-      - name: Run tests
+      - name: Run Django tests
+        run: |
+          cd guessquest
+          python manage.py test games
         run: |
           python -m pytest guessquest/games/tests.py
