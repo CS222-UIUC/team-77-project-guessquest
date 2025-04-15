@@ -1,7 +1,5 @@
 name: tester
-
 on: push
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -19,11 +17,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        
-      - name: Find test files
-        run: |
-          find . -name "*test*.py" -o -name "*tests*.py"
           
+      - name: List directory structure
+        run: find . -type f -name "*.py" | sort
+        
       - name: Run tests
         run: |
-          python -m pytest
+          python -m pytest guessquest/games/tests.py
