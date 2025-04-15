@@ -20,5 +20,10 @@ jobs:
           pip install pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         
+      - name: Find test files
+        run: |
+          find . -name "*test*.py" -o -name "*tests*.py"
+          
       - name: Run tests
-        run: python -m pytest tests.py
+        run: |
+          python -m pytest
