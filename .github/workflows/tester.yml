@@ -18,6 +18,16 @@ jobs:
           pip install django djangorestframework pytest pytest-django
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           
+      - name: Check file structure
+        run: |
+          ls -la guessquest/guessquest/
+          ls -la guessquest/games/
+          
+      - name: Create symbolic link or adjust imports
+        run: |
+          cd guessquest/games
+          ln -sf ../guessquest/trivia_service.py trivia_service.py
+          
       - name: Run Django tests
         run: |
           cd guessquest
