@@ -22,5 +22,3 @@ jobs:
         run: |
           cd guessquest
           python manage.py test games
-        run: |
-          python -m pytest guessquest/games/tests.py
