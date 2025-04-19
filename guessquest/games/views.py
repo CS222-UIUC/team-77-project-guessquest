@@ -38,8 +38,10 @@ def weather_game(request, player_id):
         return render(request, "weatherGame.html", info)
 def trivia_game(request, player_id):
     if request.method == "GET":
-        return render(request, "triviaGame.html")
+        player = get_object_or_404(Player, id=player_id)
+        
     player = get_object_or_404(Player, id=player_id)
+    return render(request, "triviaGame.html", {"player": player})
 
 def spotify_game(request, player_id):
     if request.method == "GET":

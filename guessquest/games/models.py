@@ -16,6 +16,23 @@ class Player(models.Model):
     def __str__(self):
         return self.username
 
+class BaseLeaderBoard(models.Model):
+    player = models.ForeignKey(Player, on_delete=models.CASCADE)
+    score = models.IntegerField()
+    top_players = models.Manager()
+    class Meta:
+        abstract = True
+        ordering = ['-score', 'player_id']
+    @classmethod
+    def get_top_players(cls, limit=10):
+        return cls.top_players.all()[:limit]
+    def __str__(self):
+        return f"{self.player.username} - {self.score}"
+class WeatherLeaderBoard(BaseLeaderBoard):
+    pass
+class TriviaLeaderBoard(BaseLeaderBoard):
+    pass
+
 class TemperatureGameSession(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
     score = models.IntegerField(default=0)
@@ -38,7 +55,9 @@ class TemperatureGameSession(models.Model):
         self.player.update_high_score(self.score)
         self.save()
         self.player.save()
+        WeatherLeaderBoard.objects.create(player=self.player, score=self.score)
         self.delete()
+        
     def no_questions_left(self):
         if self.questions_left == 0:
             self.game_status = 'completed'
@@ -54,4 +73,27 @@ class TemperatureQuestion(models.Model):
     
     def __str__(self):
         return f"What is the current temperature of {self.city}?"
+
+class TriviaGameSession(models.Model):
+    player = models.ForeignKey(Player, on_delete=models.CASCADE)
+    score = models.IntegerField(default=0)
+    questions_left = models.IntegerField(default=5)
+    game_status = models.CharField(max_length=10, choices=[("active", "Active"), ("completed", "Completed")], default='active')
+class TriviaQuestion(models.Model):
+    DIFFICULTY_CHOICES = [('easy', 'Easy'), ('medium', 'Medium'), ('hard', 'Hard')]
+    QUESTION_TYPE = [('multiple', 'Multiple Choice'), ('boolean', 'Boolean')]
+
+    question_text = models.TextField()
+    difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES, default='easy')
+    question_type = models.CharField(max_length=10, choices=QUESTION_TYPE, null=True, blank=True)
+    correct_answer = models.CharField(max_length=50, null=True, blank=True)
+    incorrect_answers = models.JSONField(null=True, blank=True)
+
+
+
+    def __str__(self):
+        return self.question_text
     
+
+    def __str__(self):
+        return f"{self.question_text} ({self.difficulty})"
