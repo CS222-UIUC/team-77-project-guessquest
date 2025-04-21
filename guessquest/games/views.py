@@ -1,58 +1,41 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 import json
-from .models import Player, TemperatureGameSession
+from .models import Player, TemperatureGameSession, TemperatureQuestion
+from django.views.decorators.http import require_POST
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .trivia_service import TriviaService
 import random
 import requests
-from .services import calculate_score
+from . import weather_services
 # Create your views here.
-cities = ["New York", "Pairs", "Tokyo", "London", "Los Angeles", "Bangkok", "San Francisco", "Barcelona", "Shanghai", "Dubai", "Vienna", "Rome", "Berlin"]
 def sign_in(request):
     if request.method == "GET":
         return render (request, "startScreen.html")
     elif request.method == "POST":
         username = request.POST.get("playername")
         player, created = Player.objects.get_or_create(username=username)
-        return redirect(f'/games?player_id={player.id}') # Will change this to game_selection screen
-
+        return redirect(f'/games?player_id={player.id}')
 def weather_game(request, player_id):
     if request.method == "GET":
-        request.session['score'] = 0
-        request.session['questionNum'] = 1
-        request.session['city'] = random.choice(cities)
-        info = {
-            'score': request.session['score'],
-            'questionNum': request.session['questionNum'],
-            'city': request.session['city']
-        }
+        player = get_object_or_404(Player, id=player_id)
+        game, question = weather_services.create_weather_game(player)
+        weather_services.store_weather_session_data(request, player, game, question)
+        info = weather_services.build_game_context(game.score, game.questions_left, question.city, question.actual_temperature) 
         return render(request, "weatherGame.html", info)
     elif request.method == "POST":
-        
         guess = int(request.POST.get('guess'))
-        city = request.session['city']
-        url = f'http://api.openweathermap.org/data/2.5/weather?q={city}&appid={OPENWEATHER_API_KEY}&units=metric'
-        response = requests.get(url)
-        weather_data = response.json()
-        answer = int(weather_data['main']['temp'])
-        print(weather_data)
-        score = calculate_score(answer, guess)
-
-        request.session['score'] += score
-        request.session['questionNum'] += 1
-        request.session['city'] = random.choice(cities)
-        info = {
-            'score': request.session['score'],
-            'questionNum': request.session['questionNum'],
-            'city': request.session['city']
-        }
-        if(request.session['questionNum'] >= 3):
-            return redirect(trivia_game)
+        player, game, question = weather_services.get_weather_post_data(request)
+        weather_services.process_weather_guess(game, question, guess)
+        if game.no_questions_left():
+            game.end_game()
+            return redirect(f'/trivia/{player_id}')
+        next_question = game.create_question()
+        weather_services.store_weather_session_question(request, next_question)
+        info = weather_services.build_game_context(game.score, game.questions_left, next_question.city, next_question.actual_temperature) 
         return render(request, "weatherGame.html", info)
-
 def trivia_game(request, player_id):
     if request.method == "GET":
         return render(request, "triviaGame.html")
