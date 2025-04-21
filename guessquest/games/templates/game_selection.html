@@ -2,40 +2,10 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Home Page</title>
-		<style type="text/css">
-			h1 {
-				font-family: 'Nimbus Mono PS', 'Courier New', monospace;
-				font-weight: 600;
-			}
-			.header {
-  				padding: 20px;
-  				text-align: center;
-			}
-			.column {
-  				float: left;
-  				width: 30%;
-  				padding: 20px;
-				text-align: center;
-			}
-			.row::after {
-  				content: "";
-  				display: table;
-  				clear: both;
-			}
-			.button {
-  				background-color: #bbd4fc;
-  				border: none;
-  				padding: 30px 36px;
-  				text-align: center;
-				color: black;
-  				text-decoration: none;
-  				display: inline-block;
-  				font-size: 16px;
-				font-family: 'Nimbus Mono PS', 'Courier New', monospace;
-			}
-
-		</style>
+		<link rel="stylesheet" href="{% static 'css/style.css' %} ">
 
 	</head>
 	<body>
@@ -52,7 +22,7 @@
   		</div>
 
 		<div class="column">
-    			<a href="default.html" class="button">Spotify Game</a>
+    			<a href="{% url 'start_spotify' player_id=player.id %}" class="button">Spotify Game</a>
   		</div>
 
 	</body>

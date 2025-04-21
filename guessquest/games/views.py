@@ -70,3 +70,8 @@ class TriviaAPIView(APIView):
         )
         
         return Response(questions)
+    
+def spotify_game(request, player_id):
+    if request.method == "GET":
+        return render(request, "spotify_game.html")
+    player = get_object_or_404(Player, id=player_id)
