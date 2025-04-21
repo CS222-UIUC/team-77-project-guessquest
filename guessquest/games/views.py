@@ -21,26 +21,46 @@ def weather_game(request, player_id):
         player = get_object_or_404(Player, id=player_id)
         game, question = weather_services.create_weather_game(player)
         weather_services.store_weather_session_data(request, player, game, question)
-        info = weather_services.build_game_context(game.score, game.questions_left, question.city, question.actual_temperature) 
-        return render(request, "weatherGame.html", info)
+        context = weather_services.build_game_context(game.score, game.questions_left, question.city, question.actual_temperature) 
+        return render(request, "weatherGame.html", context)
     elif request.method == "POST":
-        guess = int(request.POST.get('guess'))
-        player, game, question = weather_services.get_weather_post_data(request)
+        guess, player, game, question = weather_services.get_weather_post_data(request)
         weather_services.process_weather_guess(game, question, guess)
         if game.no_questions_left():
             game.end_game()
-            return redirect(f'/trivia/{player_id}')
+            top_ten = Player.objects.order_by('-weather_high_score')[:10]
+            return render(request, f'weatherLeaderBoard.html', { # Will need to update this depending on what frontend names the leaderboard page
+                'top_ten' : top_ten,
+                'final_score' : game.score
+            })
         next_question = game.create_question()
         weather_services.store_weather_session_question(request, next_question)
-        info = weather_services.build_game_context(game.score, game.questions_left, next_question.city, next_question.actual_temperature) 
-        return render(request, "weatherGame.html", info)
+        context = weather_services.build_game_context(game.score, game.questions_left, next_question.city, next_question.actual_temperature) 
+        return render(request, "weatherGame.html", context)
+    
 def trivia_game(request, player_id):
     if request.method == "GET":
         player = get_object_or_404(Player, id=player_id)
-        game, question = trivia_services.createTriviaGame(player)
+        game, question = trivia_services.create_trivia_game(player)
+        trivia_services.store_trivia_session_data(request, player, game, question)
+        context = trivia_services.build_game_context(game, question)
+        return render(request, "triviaGame.html", context)
+    elif request.method == "POST":
+        guess, player, game, question = trivia_services.get_trivia_post_data(request)
+        trivia_services.process_trivia_guess(game, question, guess)
+        if game.no_questions_left():
+            game.end_game()
+            top_ten = Player.objects.order_by('-trivia_high_score')[:10]
+            return render(request, f'triviaLeaderBoard.html', {
+                'top_ten' : top_ten,
+                'final_score' : game.score
+            })
+        next_question = game.create_question()
+        trivia_services.store_trivia_session_data(request, next_question)
+        context = trivia_services.build_game_context(game, next_question)
+        return render(request, "triviaGame.html", context)
         
-    player = get_object_or_404(Player, id=player_id)
-    return render(request, "triviaGame.html", {"player": player})
+    
 
 def spotify_game(request, player_id):
     if request.method == "GET":

@@ -64,14 +64,11 @@ class TemperatureQuestion(models.Model):
     city = models.CharField(max_length=50)
     user_guess = models.FloatField(null=True, blank=True)
     actual_temperature = models.FloatField(null=False, blank=False)
-    time_created = models.DateTimeField(auto_now_add=True)
-    time_limit = models.IntegerField(default=30) # 30 seconds
     
     def __str__(self):
         return f"What is the current temperature of {self.city}?"
 
 class TriviaGameSession(BaseGameSession):
-    
     def create_question(self):
         super().create_question()
         return TriviaQuestion.objects.order_by('?').first()

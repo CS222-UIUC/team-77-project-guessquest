@@ -42,7 +42,6 @@ def calculate_score(actual_temp, user_guess):
 def process_weather_guess(game, question, guess):
     score = calculate_score(question.actual_temperature, guess)
     game.update_score(score)
-    game.questions_left -= 1
     game.save()
 def create_weather_game(player):
     game = models.TemperatureGameSession.objects.create(player=player)
@@ -58,10 +57,11 @@ def get_weather_post_data(request):
     game_id = request.session.get('game_id')
     question_id = request.session.get('question_id')
     player_id = request.session.get('player_id')
+    guess = int(request.POST.get('guess'))
     game = get_object_or_404(models.TemperatureGameSession, id=game_id)
     question = get_object_or_404(models.TemperatureQuestion, id=question_id)
     player = get_object_or_404(models.Player, id=player_id)
-    return player, game, question
+    return guess, player, game, question
 def build_game_context(score, questions_left, city, actual_temperature):
     return {
             'score': score,
