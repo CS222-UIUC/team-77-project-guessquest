@@ -70,3 +70,7 @@ class TriviaAPIView(APIView):
         )
         
         return Response(questions)
+    
+def spotify_game(request, player_id):
+    # use player_id as needed later
+    return render(request, 'spotify_game.html')
