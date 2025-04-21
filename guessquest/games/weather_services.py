@@ -44,6 +44,7 @@ def process_weather_guess(game, question, guess):
     game.update_score(score)
     game.questions_left -= 1
     game.save()
+    return score
 def create_weather_game(player):
     game = models.TemperatureGameSession.objects.create(player=player)
     question = game.create_question()
@@ -62,10 +63,26 @@ def get_weather_post_data(request):
     question = get_object_or_404(models.TemperatureQuestion, id=question_id)
     player = get_object_or_404(models.Player, id=player_id)
     return player, game, question
-def build_game_context(score, questions_left, city, actual_temperature):
+def build_game_context(score, questions_left, city, actual_temperature, feedback):
     return {
             'score': score,
             'questionsNum': 5 - questions_left,
             'city': city,
-            'actualTemperature' : actual_temperature
+            'actualTemperature' : actual_temperature,
+            'feedback' : feedback
         }
+def get_feedback(score, player_score, questions_left, feedback):
+    message = ""
+    if(score == 250):
+        message = "Perfect Guess"
+    elif(score > 150):
+        message = "Good Guess"
+    else:
+        message = "Keep Guessing"
+    
+    return{
+        'score': player_score,
+        'questionsNum': 5 - questions_left,
+        'message': message,
+        'feedback' : feedback
+    }

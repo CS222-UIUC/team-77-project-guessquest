@@ -11,10 +11,10 @@
     {% endcomment %}
   </head>
   <body>
+    {% if feedback %}
     <div class="weather">
       <h3 id="score">Score: {{score}}</h3>
       <p>Question {{questionNum}}</p>
-      <p></p>
       <p id="question">Guess the weather in {{city}}.</p>
       <form id="playerAnswer" method="post">
         {% csrf_token %}
@@ -23,12 +23,38 @@
           type="number"
           id="guess"
           name="guess"
-          placeholder="Enter your guess in (celsius)"
+          placeholder="Enter your guess in (fahrenheit)"
           required
         />
         <button id="guess-button" type="submit">Guess!</button>
       </form>
     </div>
+    {% elif end %}
+    <div class="weather">
+      <form method="get" action="{% url 'game_selection' %}">
+        <input type="hidden" name="player_id" value="{{ id }}" />
+        <button id="guess-button" type="submit">Selection Page</button>
+      </form>
+      <form method="get" action="{% url 'weather_game' player_id=id %}">
+        <button id="guess-button" type="submit">Play Again</button>
+      </form>
+      <form method="get">
+        <button id="guess-button" type="submit">Leaderboard</button>
+      </form>
+    </div>
+    {% else %}
+    <div class="weather">
+      <h3 id="score">Score: {{score}}</h3>
+      <p>Question {{questionNum}}</p>
+      <p id="question">{{message}}</p>
+      <form method="post">
+        {% csrf_token %}
+        <button id="guess-button" name="next" type="submit">
+          Next Question
+        </button>
+      </form>
+    </div>
+    {% endif %}
 
     <p id="message"></p>
   </body>
