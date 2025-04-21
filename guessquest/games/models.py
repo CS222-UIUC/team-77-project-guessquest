@@ -56,7 +56,6 @@ class TemperatureGameSession(BaseGameSession):
     def end_game(self):
         super().end_game()
         self.player.update_weather_high_score(self.score)
-        WeatherLeaderBoard.objects.update_or_create(player=self.player, defaults={'score': self.score})
         self.delete()
         
         
