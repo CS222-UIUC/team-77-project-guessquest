@@ -1,4 +1,3 @@
-# myapp/management/commands/fetch_all_trivia.py
 import time, requests
 from django.core.management.base import BaseCommand
 from ...models import TriviaQuestion 

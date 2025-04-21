@@ -1,10 +1,11 @@
 import requests
-
+from . import models
 class TriviaService:
     BASE_URL = "https://opentdb.com/api.php"
     
     @staticmethod
     def get_questions(amount=10, category=None, difficulty=None, question_type=None):
+                        
         """
         Fetch trivia questions from Open Trivia Database
         
@@ -29,3 +30,8 @@ class TriviaService:
             return response.json()
         else:
             return {"error": f"API request failed with status code {response.status_code}"}
+        
+def create_trivia_game(player):
+    game = models.TriviaGameSession.objects.create()
+    question = game.get_question()
+    return game, question

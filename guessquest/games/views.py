@@ -1,15 +1,13 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
-import json
 from .models import Player, TemperatureGameSession, TemperatureQuestion
 from django.views.decorators.http import require_POST
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .trivia_service import TriviaService
-import random
-import requests
+from .trivia_services import TriviaService
 from . import weather_services
+from . import trivia_services
 # Create your views here.
 def sign_in(request):
     if request.method == "GET":
@@ -39,6 +37,7 @@ def weather_game(request, player_id):
 def trivia_game(request, player_id):
     if request.method == "GET":
         player = get_object_or_404(Player, id=player_id)
+        game, question = trivia_services.createTriviaGame(player)
         
     player = get_object_or_404(Player, id=player_id)
     return render(request, "triviaGame.html", {"player": player})
