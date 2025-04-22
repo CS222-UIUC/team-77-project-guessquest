@@ -72,7 +72,10 @@ class TriviaGameSession(BaseGameSession):
     def create_question(self):
         super().create_question()
         return TriviaQuestion.objects.order_by('?').first()
-
+    def end_game(self):
+        super().end_game()
+        self.player.update_trivia_high_score(self.score)
+        self.delete()
 class TriviaQuestion(models.Model):
     DIFFICULTY_CHOICES = [('easy', 'Easy'), ('medium', 'Medium'), ('hard', 'Hard')]
     QUESTION_TYPE = [('multiple', 'Multiple Choice'), ('boolean', 'Boolean')]
