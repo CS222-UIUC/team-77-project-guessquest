@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from .trivia_services import TriviaService
 from . import weather_services
 from . import trivia_services
+
 # Create your views here.
 def sign_in(request):
     if request.method == "GET":
