@@ -236,7 +236,7 @@ class IntegrationTests(TestCase):
                 user_guess=guesses[i],
                 actual_temperature=actuals[i]
             )
-            total_points += weather_services.calculate_score(guesses[i], actuals[i])
+            total_points += weather_services.calculate_score()
             weather_services.process_weather_guess(game, question, question.user_guess)
         
         # Verify final state

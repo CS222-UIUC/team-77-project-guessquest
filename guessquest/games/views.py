@@ -1,7 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from .models import Player, TemperatureGameSession, TemperatureQuestion
-from django.views.decorators.http import require_POST
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -25,20 +24,27 @@ def weather_game(request, player_id):
         context = weather_services.build_game_context(game.score, game.questions_left, question.city, question.actual_temperature) 
         return render(request, "weatherGame.html", context)
     elif request.method == "POST":
-        guess, player, game, question = weather_services.get_weather_post_data(request)
-        weather_services.process_weather_guess(game, question, guess)
-        if game.no_questions_left():
-            game.end_game()
-            top_ten = Player.objects.order_by('-weather_high_score')[:10]
-            return render(request, f'weatherLeaderBoard.html', { # Will need to update this depending on what frontend names the leaderboard page
-                'top_ten' : top_ten,
-                'final_score' : game.score
-            })
-        next_question = game.create_question()
-        weather_services.store_weather_session_question(request, next_question)
-        context = weather_services.build_game_context(game.score, game.questions_left, next_question.city, next_question.actual_temperature) 
-        return render(request, "weatherGame.html", context)
-    
+        if 'guess' in request.POST:
+            guess, player, game, question = weather_services.get_weather_post_data(request)
+            score = weather_services.process_weather_guess(game, question, guess)
+            context = weather_services.build_game_context(game.score, game.questions_left, question.city, question.actual_temperature)
+            weather_services.store_weather_session_data(request, player, game, question)
+            #feedback = weather_services.gext_feedback(score, game.score, game.questions_left, False)
+            return render(request, "weatherGame.html", context)
+        elif 'next' in request.POST:
+            player = get_object_or_404(Player, id=player_id)
+            game = TemperatureGameSession.objects.get(player=player)
+            if game.no_questions_left():
+                game.end_game()
+                end = True
+                top_ten = Player.objects.order_by('-weather_high_score')[:10]
+                info = {'end': end, 'id' : player.id, 'top_ten': top_ten, 'final_score' : game.score}
+                return render(request, f'weatherGame.html', info)
+            next_question = game.create_question()
+            weather_services.store_weather_session_data(request, player, game, next_question)
+            context = weather_services.build_game_context(game.score, game.questions_left, next_question.city, next_question.actual_temperature) 
+            return render(request, "weatherGame.html", context)
+        
 def trivia_game(request, player_id):
     if request.method == "GET":
         player = get_object_or_404(Player, id=player_id)
@@ -47,6 +53,7 @@ def trivia_game(request, player_id):
         context = trivia_services.build_game_context(game, question)
         return render(request, "triviaGame.html", context)
     elif request.method == "POST":
+        player = get_object_or_404(Player, id=player_id)
         guess, player, game, question = trivia_services.get_trivia_post_data(request)
         trivia_services.process_trivia_guess(game, question, guess)
         if game.no_questions_left():
