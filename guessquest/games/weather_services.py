@@ -4,6 +4,7 @@ from . import models
 import json
 import random
 from django.shortcuts import get_object_or_404
+import math
 
 # Global 
 cities = [
@@ -38,6 +39,8 @@ def get_random_city() :
     return random.choice(cities)   
 def calculate_score(actual_temp, user_guess):
     error = abs(actual_temp - user_guess)
+    score = 100 * math.exp(-0.05 * error)
+    return int(score)
     return max(0, 250 - int(error * 10))
 def process_weather_guess(game, question, guess):
     score = calculate_score(question.actual_temperature, guess)
