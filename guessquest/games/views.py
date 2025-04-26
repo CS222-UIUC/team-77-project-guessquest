@@ -21,19 +21,25 @@ def weather_game(request, player_id):
         player = get_object_or_404(Player, id=player_id)
         game, question = weather_services.create_weather_game(player)
         weather_services.store_weather_session_data(request, player, game, question)
-        context = weather_services.build_game_context(game.score, game.questions_left, question.city, question.actual_temperature) 
+        feedback = True
+        context = weather_services.build_game_context(game.score, game.questions_left, question.city, question.actual_temperature, feedback) 
         return render(request, "weatherGame.html", context)
     elif request.method == "POST":
         if 'guess' in request.POST:
+            display_feedback = False
             guess, player, game, question = weather_services.get_weather_post_data(request)
             score = weather_services.process_weather_guess(game, question, guess)
-            context = weather_services.build_game_context(game.score, game.questions_left, question.city, question.actual_temperature)
-            weather_services.store_weather_session_data(request, player, game, question)
-            #feedback = weather_services.gext_feedback(score, game.score, game.questions_left, False)
+            message = weather_services.get_message(score)
+            context = weather_services.build_game_context(game.score, game.questions_left, question.city, question.actual_temperature, display_feedback, message)
+            weather_services.store_weather_session_data(request, player, game, question, message)
             return render(request, "weatherGame.html", context)
         elif 'next' in request.POST:
-            player = get_object_or_404(Player, id=player_id)
-            game = TemperatureGameSession.objects.get(player=player)
+            display_feedback = True
+            player_id = request.session['player_id']
+            game_id = request.session['game_id']
+            player = Player.objects.get(id=player_id)
+            game = TemperatureGameSession.objects.get(id=game_id)
+            message = request.session['message']
             if game.no_questions_left():
                 game.end_game()
                 end = True
@@ -42,7 +48,7 @@ def weather_game(request, player_id):
                 return render(request, f'weatherGame.html', info)
             next_question = game.create_question()
             weather_services.store_weather_session_data(request, player, game, next_question)
-            context = weather_services.build_game_context(game.score, game.questions_left, next_question.city, next_question.actual_temperature) 
+            context = weather_services.build_game_context(game.score, game.questions_left, next_question.city, next_question.actual_temperature, display_feedback, message) 
             return render(request, "weatherGame.html", context)
         
 def trivia_game(request, player_id):

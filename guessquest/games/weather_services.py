@@ -48,10 +48,12 @@ def create_weather_game(player):
     game = models.TemperatureGameSession.objects.create(player=player)
     question = game.create_question()
     return game, question
-def store_weather_session_data(request, player, game, question):
+def store_weather_session_data(request, player, game, question, message=None):
     request.session['game_id'] = game.id
     request.session['question_id'] = question.id
     request.session['player_id'] = player.id
+    if message is not None:
+        request.session['message'] = message
 def store_weather_session_question(request, question):
     request.session['question_id'] = question.id
 def get_weather_post_data(request):
@@ -63,16 +65,20 @@ def get_weather_post_data(request):
     question = get_object_or_404(models.TemperatureQuestion, id=question_id)
     player = get_object_or_404(models.Player, id=player_id)
     return guess, player, game, question
-def build_game_context(score, questions_left, city, actual_temperature):
-    return {
+    
+def build_game_context(score, questions_left, city, actual_temperature, display_feedback, message=None):
+    context = {
             'score': score,
             'questionsNum': 5 - questions_left,
             'city': city,
             'actualTemperature' : actual_temperature,
-            'feedback' : get_feedback(score),
+            'feedback' : display_feedback,
         }
+    if message is not None:
+        context['message'] = message
+    return context
 
-def get_feedback(score):
+def get_message(score):
     message = ""
     if(score == 250):
         message = "Perfect Guess"
