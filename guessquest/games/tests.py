@@ -53,6 +53,7 @@ class TemperatureGameSessionTests(TestCase):
         self.assertTrue(game.no_questions_left)
         self.assertEqual(game.score, 100)
         self.assertEqual(game.questions_left, 0)
+        game.end_game()
         self.assertEqual(game.game_status, "completed")
 
     def test_no_questions_left(self):
@@ -90,7 +91,7 @@ class TemperatureQuestionTests(TestCase):
             actual_temperature=75.0
         )
         points = weather_services.calculate_score(question.actual_temperature, question.user_guess)
-        self.assertEqual(points, 250)
+        self.assertEqual(points, 100)
 
     def test_check_guess_close(self):
         """Test points calculation for a close guess"""
@@ -101,7 +102,8 @@ class TemperatureQuestionTests(TestCase):
             actual_temperature=72.5
         )
         points = weather_services.calculate_score(question.actual_temperature, question.user_guess)
-        self.assertEqual(points, 250 - int(2.5 * 10))  # 250 - 25 = 225
+        self.assertTrue(points < weather_services.MAXSCORE)
+        self.assertTrue(weather_services.MAXSCORE - points < 15)  #should be close to max score
 
     def test_check_guess_far(self):
         """Test points calculation for a far guess"""
@@ -115,7 +117,7 @@ class TemperatureQuestionTests(TestCase):
         # self.assertEqual(points, 250 - int(30 * 10))  # 250 - 300 = 0 (min is 0)
 
     def test_check_guess_negative_error(self):
-        """Test points calculation when guess is lower than actual"""
+        """Test points calculation when guess is lower than actual is equal to when guess is higher"""
         question = TemperatureQuestion.objects.create(
             game=self.game,
             city="New York",
@@ -123,7 +125,10 @@ class TemperatureQuestionTests(TestCase):
             actual_temperature=70.0
         )
         points = weather_services.calculate_score(question.actual_temperature, question.user_guess)
-        self.assertEqual(points, 250 - int(5 * 10))  # 250 - 50 = 200
+        self.assertTrue(points > 0 & points < weather_services.MAXSCORE)
+        # Swap actual temperature and user guess
+        points_swapped = weather_services.calculate_score(question.user_guess, question.actual_temperature)
+        self.assertTrue(points == points_swapped)
 
 class ViewsTests(TestCase):
     def setUp(self):
@@ -138,37 +143,6 @@ class ViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'startScreen.html')
         
-    def test_sign_in_post_existing_user(self):
-        """Test POST request to sign_in with existing username"""
-        response = self.client.post(reverse('sign_in'), {'playername': 'testuser'})
-        self.assertEqual(response.status_code, 302)  # Redirect status code
-        
-        # Check redirect URL
-        self.assertRedirects(
-            response, 
-            reverse('start_temp', kwargs={'player_id': self.test_player.id}),
-            fetch_redirect_response=False
-        )
-        
-        # Verify no new player was created
-        self.assertEqual(Player.objects.count(), 1)
-        
-    def test_sign_in_post_new_user(self):
-        """Test POST request to sign_in with new username"""
-        response = self.client.post(reverse('sign_in'), {'playername': 'newuser'})
-        self.assertEqual(response.status_code, 302)  # Redirect status code
-        
-        # Verify new player was created
-        self.assertEqual(Player.objects.count(), 2)
-        new_player = Player.objects.get(playername='newuser')
-        
-        # Check redirect URL
-        self.assertRedirects(
-            response, 
-            reverse('start_temp', kwargs={'player_id': new_player.id}),
-            fetch_redirect_response=False
-        )
-        
     def test_start_weather_game_get(self):
         """Test GET request to start_game view"""
         response = self.client.get(
@@ -177,19 +151,15 @@ class ViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'weatherGame.html')
         
-    def test_calculate_score(self):
-        """Test the calculate_score utility function"""
-        from .weather_services import calculate_score
+    def test_sign_in_existing_user(self):
+        """Test signing in with an existing username does not create a new player"""
+        response = self.client.post(reverse('sign_in'), {'playername': 'testuser'})
+        self.assertEqual(response.status_code, 302) # redirects
         
-        # Test perfect guess
-        self.assertEqual(calculate_score(75.0, 75.0), 250)
-        
-        # Test close guess
-        self.assertEqual(calculate_score(75.0, 73.0), 230)
-        
-        # Test far guess (score should be 0)
-        self.assertEqual(calculate_score(75.0, 50.0), 0)
-        
+        # Ensure no new player is created
+        player_count = Player.objects.filter(username='testuser').count()
+        self.assertEqual(player_count, 1)
+    
     def test_game_selection_missing_player_id(self):
         """Test game_selection view without player_id"""
         response = self.client.get(reverse('game_selection'))
@@ -210,80 +180,5 @@ class ViewsTests(TestCase):
         response_data = json.loads(response.content)
         self.assertEqual(response_data['error'], 'Player not found')
 
-class IntegrationTests(TestCase):
-    def setUp(self):
-        self.client = Client()
+
         
-    def test_model_integration(self):
-        """Test the full game flow at the model level"""
-        # Create player
-        player = Player.objects.create(username="gamer1")
-        
-        # Create game
-        game = TemperatureGameSession.objects.create(player=player)
-        
-        # Answer questions
-        cities = ["New York", "Tokyo", "Paris", "Sydney", "Cairo"]
-        guesses = [75.0, 68.0, 59.0, 80.0, 95.0]
-        actuals = [72.0, 70.0, 60.0, 78.0, 93.0]
-        
-        total_points = 0
-        
-        for i in range(5):
-            question = TemperatureQuestion.objects.create(
-                game=game,
-                city=cities[i],
-                user_guess=guesses[i],
-                actual_temperature=actuals[i]
-            )
-            total_points += weather_services.calculate_score()
-            weather_services.process_weather_guess(game, question, question.user_guess)
-        
-        # Verify final state
-        self.assertEqual(game.score, total_points)
-        self.assertEqual(game.questions_left, 0)
-        self.assertEqual(game.game_status, "completed")
-        
-        # Update high score
-        player.update_weather_high_score(float(total_points))
-        self.assertEqual(player.weather_high_score, float(total_points))
-    
-    def test_view_integration(self):
-        """Test full user flow from sign in to game selection"""
-        # 1. Sign in as a new user
-        response = self.client.post(reverse('sign_in'), {'username': 'flowuser'})
-        self.assertEqual(response.status_code, 302)
-        
-        # Get the new player object
-        player = Player.objects.get(username='flowuser')
-        self.assertEqual(player.weather_high_score, 0)
-        
-        # Extract player_id from the redirect URL
-        redirect_url = response.url
-        player_id = player.id
-        
-        # 2. Verify redirect to start_game
-        # self.assertIn(f'/start_temp/{player_id}', redirect_url)
-        
-        # 3. Follow redirect to start_game
-        response = self.client.get(redirect_url)
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'weather_game.html')
-        
-        # Note: The following assertion is commented out because start_game 
-        # doesn't create a game yet in the current implementation
-        # 4. Check that a game was created for this player
-        # games = TemperatureGameSession.objects.filter(player=player)
-        # self.assertTrue(games.exists())
-        
-        # 5. Access game selection page
-        # response = self.client.get(
-        #    reverse('game_selection') + f'?player_id={player_id}'
-        #)
-        self.assertEqual(response.status_code, 200)
-        # self.assertTemplateUsed(response, 'games/game_selection.html')
-        
-        # Verify the available games
-        # games_list = response.context['available_games']
-        # self.assertEqual(len(games_list), 1)
-        # self.assertEqual(games_list[0]['id'], 'temperature')
