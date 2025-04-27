@@ -15,6 +15,8 @@ cities = [
     "Denver", "Boston", "Las Vegas"
 ]
 
+MAXSCORE = 100
+
 class CityNotFoundError(Exception):
     pass
 class CoordinatesNotFoundError(Exception):
@@ -39,9 +41,10 @@ def get_random_city() :
     return random.choice(cities)   
 def calculate_score(actual_temp, user_guess):
     error = abs(actual_temp - user_guess)
-    score = 100 * math.exp(-0.05 * error)
+    sigma = 5  # controls how quickly score falls off
+    score = int(100 * math.exp(-(error**2) / (2 * sigma**2)))
+    print (error)
     return int(score)
-    return max(0, 250 - int(error * 10))
 def process_weather_guess(game, question, guess):
     score = calculate_score(question.actual_temperature, guess)
     game.update_score(score)
@@ -81,13 +84,15 @@ def build_game_context(score, questions_left, city, actual_temperature, display_
         context['message'] = message
     return context
 
-def get_message(score):
+def get_message(score, user_guess, actual_temperature):
+    statistics = f'the actual temperature was {actual_temperature}°, you guessed {user_guess}°.'
     message = ""
-    if(score == 250):
-        message = "Perfect Guess"
-    elif(score > 150):
-        message = "Good Guess"
+    if(score == MAXSCORE):
+        message = "Perfect Guess<br>"
+    elif(score > MAXSCORE * 0.7):
+        message = "Good Guess<br>"
     else:
-        message = "Keep Guessing"
-    
+        message = "Keep Guessing<br>"
+        
+    message += statistics
     return message

@@ -43,7 +43,7 @@
     <div class="weather">
       <h3 id="score">Score: {{score}}</h3>
       <p>Question {{questionNum}}</p>
-      <p id="question">{{message}}</p>
+      <p id="question">{{message|safe}}</p>
       <form method="post">
         {% csrf_token %}
         <button id="guess-button" name="next" type="submit">

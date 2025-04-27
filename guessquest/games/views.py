@@ -29,7 +29,7 @@ def weather_game(request, player_id):
             display_feedback = False
             guess, player, game, question = weather_services.get_weather_post_data(request)
             score = weather_services.process_weather_guess(game, question, guess)
-            message = weather_services.get_message(score)
+            message = weather_services.get_message(score, guess, question.actual_temperature)
             context = weather_services.build_game_context(game.score, game.questions_left, question.city, question.actual_temperature, display_feedback, message)
             weather_services.store_weather_session_data(request, player, game, question, message)
             return render(request, "weatherGame.html", context)
