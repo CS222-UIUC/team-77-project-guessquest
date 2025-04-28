@@ -110,3 +110,28 @@ body {
   opacity: 0.85;
   cursor: pointer;
 }
+
+.column {
+  float: left;
+  width: 30%;
+  padding: 20px;
+  text-align: center;
+}
+
+.row::after {
+  content: "";
+  display: table;
+  clear: both;
+}   
+
+.button {
+  padding: 20px;
+  font-size: 20px;
+  margin: 10px;
+  cursor: pointer;
+  background-color: white;
+  border: 2px solid black;
+  font-family: "Courier New", Courier, monospace;
+  text-decoration: none;
+  color: black;
+}

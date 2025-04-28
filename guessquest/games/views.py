@@ -60,13 +60,6 @@ def trivia_game(request, player_id):
         trivia_services.store_trivia_session_data(request, next_question)
         context = trivia_services.build_game_context(game, next_question)
         return render(request, "triviaGame.html", context)
-        
-    
-
-def spotify_game(request, player_id):
-    if request.method == "GET":
-        return render(request, "spotify_game.html")
-    player = get_object_or_404(Player, id=player_id)
 
 
 # view for game selection page
@@ -100,12 +93,6 @@ def game_selection(request):
                 'name': 'Trivia Game',
                 'description': 'Trivia Game!',
                 'url': f'/trivia/{player_id}'
-            },
-            {
-                'id': 'spotify',
-                'name': 'Spotify Game',
-                'description': 'Spotify Game!',
-                'url': f'/spotify/{player_id}'
             }
         ]
     })
