@@ -41,9 +41,8 @@ def get_random_city() :
     return random.choice(cities)   
 def calculate_score(actual_temp, user_guess):
     error = abs(actual_temp - user_guess)
-    sigma = 5  # controls how quickly score falls off
+    sigma = 7  # higher sigma -> less drop off
     score = int(100 * math.exp(-(error**2) / (2 * sigma**2)))
-    print (error)
     return int(score)
 def process_weather_guess(game, question, guess):
     score = calculate_score(question.actual_temperature, guess)
@@ -86,10 +85,11 @@ def build_game_context(score, questions_left, city, actual_temperature, display_
 
 def get_message(score, user_guess, actual_temperature):
     statistics = f'the actual temperature was {actual_temperature}°, you guessed {user_guess}°.'
+    difference = abs(actual_temperature - user_guess)
     message = ""
-    if(score == MAXSCORE):
+    if (difference < 1):
         message = "Perfect Guess<br>"
-    elif(score > MAXSCORE * 0.6):
+    elif(difference <= 5):
         message = "Good Guess<br>"
     else:
         message = "Keep Guessing<br>"

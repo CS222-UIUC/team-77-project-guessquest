@@ -35,11 +35,22 @@ class BaseGameSession(models.Model):
     def end_game(self):
         self.game_status = "completed"
         self.save()
-    def create_question(self) :
+    def decrement_question_count(self) :
         self.questions_left -= 1
+        if self.questions_left == 0:
+            self.game_status = "completed"
+        self.save()
+    def create_question(self) :
+        self.decrement_question_count()
         self.save()
     def no_questions_left(self):
         return self.questions_left == 0
+    def game_over(self):
+        if self.game_status == 'completed' or self.no_questions_left():
+            self.end_game()
+            return True
+        return False
+        
     
 class TemperatureGameSession(BaseGameSession):
     def create_question(self) :
@@ -74,6 +85,7 @@ class TriviaGameSession(BaseGameSession):
         super().end_game()
         self.player.update_trivia_high_score(self.score)
         self.delete()
+        
 class TriviaQuestion(models.Model):
     DIFFICULTY_CHOICES = [('easy', 'Easy'), ('medium', 'Medium'), ('hard', 'Hard')]
     QUESTION_TYPE = [('multiple', 'Multiple Choice'), ('boolean', 'Boolean')]

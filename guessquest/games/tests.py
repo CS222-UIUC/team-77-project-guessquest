@@ -83,7 +83,54 @@ class TemperatureGameSessionTests(TestCase):
         
         game.questions_left = 0
         self.assertTrue(game.no_questions_left())
-
+class TemperatureScoreCalculation(TestCase):
+    def setUp(self):
+        self.player = Player.objects.create(username="testuser")
+        self.game = TemperatureGameSession.objects.create(player=self.player)
+        
+    def test_perfect_guess(self):
+        actual_temperature = 30
+        user_guess = 30
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        self.assertEqual(points, weather_services.MAXSCORE)
+        
+    def test_close_guess(self):
+        actual_temperature = 30
+        user_guess = 29
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        difference = abs(points - weather_services.MAXSCORE)
+        self.assertTrue(difference < 3)
+        
+        user_guess = 28
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        missed_points = abs(points - weather_services.MAXSCORE)
+        self.assertTrue(missed_points < 15)
+        
+        user_guess = 25
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        missed_points = abs(points - weather_services.MAXSCORE)
+        self.assertTrue(missed_points < 30)
+        
+    def far_guess(self):
+        actual_temperature = 30
+        user_guess = 10
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        self.assertTrue(points < 10)
+        
+        actual_temperature = 30
+        user_guess = 20
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        self.assertTrue(points < 10)
+        
+        actual_temperature = 30
+        user_guess = 500
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        self.assertTrue(points == 0)
+        
+        actual_temperature = 30
+        user_guess = -500
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        self.assertTrue(points == 0)
 class TemperatureQuestionTests(TestCase):
     def setUp(self):
         self.player = Player.objects.create(username="testuser")
@@ -123,8 +170,8 @@ class TemperatureQuestionTests(TestCase):
         )
         points = weather_services.calculate_score(question.actual_temperature, question.user_guess)
         self.assertTrue(points < weather_services.MAXSCORE)
-        self.assertTrue(weather_services.MAXSCORE - points < 15)  #should be close to max score
-
+        self.assertTrue(weather_services.MAXSCORE - points < 10)  #should be close to max score
+        
     def test_check_guess_far(self):
         """Test points calculation for a far guess"""
         question = TemperatureQuestion.objects.create(
@@ -134,7 +181,9 @@ class TemperatureQuestionTests(TestCase):
             actual_temperature=65.0
         )
         points = weather_services.calculate_score(question.actual_temperature, question.user_guess)
-        # self.assertEqual(points, 250 - int(30 * 10))  # 250 - 300 = 0 (min is 0)
+        self.assertEqual(points, 0)
+        question.user_guess = 85.0
+        points = weather_services.calculate_score(question.actual_temperature, question.user_guess)
 
     def test_check_guess_negative_error(self):
         """Test points calculation when guess is lower than actual is equal to when guess is higher"""
@@ -271,21 +320,21 @@ class TestGetWeatherMessage(TestCase):
         score = weather_services.MAXSCORE
         user_guess = 25
         actual_temperature = 25
-        expected_message = "Perfect Guess<br>the actual temperature was 25°, you guessed 25°."
+        expected_message = f"Perfect Guess<br>the actual temperature was {actual_temperature}°, you guessed {user_guess}°."
         self.assertEqual(weather_services.get_message(score, user_guess, actual_temperature), expected_message)
 
     def test_good_guess(self):
         score = int(weather_services.MAXSCORE * 0.8)
         user_guess = 30
         actual_temperature = 28
-        expected_message = "Good Guess<br>the actual temperature was 28°, you guessed 30°."
+        expected_message = f"Good Guess<br>the actual temperature was {actual_temperature}°, you guessed {user_guess}°."
         self.assertEqual(weather_services.get_message(score, user_guess, actual_temperature), expected_message)
 
     def test_keep_guessing(self):
         score = int(weather_services.MAXSCORE * 0.5)
-        user_guess = 20
+        user_guess = 30
         actual_temperature = 15
-        expected_message = "Keep Guessing<br>the actual temperature was 15°, you guessed 20°."
+        expected_message = f"Keep Guessing<br>the actual temperature was {actual_temperature}°, you guessed {user_guess}°."
         self.assertEqual(weather_services.get_message(score, user_guess, actual_temperature), expected_message)
     
 class TestTriviaServices(TestCase):
@@ -293,10 +342,75 @@ class TestTriviaServices(TestCase):
         # Set up test client
         self.client = Client()
         # Create a test player
-        self.player = Player.objects.create(username="testuser", trivia_score=50)
+        self.player = Player.objects.create(username="testuser", trivia_high_score=50)
         player = self.player
+        # Mock data
+        TriviaQuestion.objects.create(
+        question_text="What is 2+2?",
+        correct_answer="4",
+        incorrect_answers=["3", "5", "22"],
+        difficulty="easy",
+        question_type="multiple"
+        )
+        
     def test_create_trivia_game(self):
         game, question = trivia_services.create_trivia_game(self.player)
-        self.assertIsInstance(game, TriviaGameSession)
+        self.assertIsInstance(game, TriviaGameSession) # Ensures game is it's own instance
+        self.assertIsNotNone(question)
+        self.assertEqual(question.correct_answer, '4')
+        self.assertEqual(len(question.incorrect_answers), 3)
+        self.assertIn('3', question.incorrect_answers)
+    def test_process_trivia_guess(self):
+        game, question = trivia_services.create_trivia_game(self.player)
+        guess = '22' # incorrect
+        trivia_services.process_trivia_guess(game, question, guess)
+        self.assertEqual(game.score, 0) # should stay the same
+        guess = '4' # correct
+        trivia_services.process_trivia_guess(game, question, guess)
+        self.assertEqual(game.score, 10) # should be incrememented by 10
+        guess = '5' # incorrect
+        trivia_services.process_trivia_guess(game, question, guess)
+        self.assertEqual(game.score, 10) # should stay the same
 
+class TestTriviaModels(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.player = Player.objects.create(username="testuser", trivia_high_score=0)
+        TriviaQuestion.objects.create(
+            question_text="What is the capital of France?",
+            correct_answer="Paris",
+            incorrect_answers=["London", "Berlin", "Madrid"],
+            difficulty="medium",
+            question_type="multiple"
+        )
+        self.game = TriviaGameSession.objects.create(player=self.player)
+        self.initial_questions_left = self.game.questions_left
+        self.assertEquals(self.initial_questions_left, 5)
+    def test_create_question(self):
+        question = self.game.create_question()
+        self.assertFalse(self.game.no_questions_left())
+        self.assertEqual(question.question_text, "What is the capital of France?")
+        self.assertEqual(question.correct_answer, "Paris")
+        self.assertEqual(len(question.incorrect_answers), 3)
+        self.assertIn("London", question.incorrect_answers)
+        self.assertEqual(question.difficulty, "medium")
+        self.assertEqual(question.question_type, "multiple")
+        self.assertEquals(self.game.questions_left, 4)
+        question = self.game.create_question()
+        question = self.game.create_question()
+        question = self.game.create_question()
+        self.assertFalse(self.game.no_questions_left())
+        question = self.game.create_question()
+        self.assertTrue(self.game.no_questions_left()) # should be out of questions
+    
+    def test_game_over(self):
+        self.game.questions_left = 1
+        self.game.score = 10
+        self.game.decrement_question_count()
+        self.assertEqual(self.game.game_status, "completed")
+        self.assertEqual(self.game.questions_left, 0)
+        self.assertTrue(self.game.game_over())
+        self.assertEqual(self.player.trivia_high_score, 10) # updated player leaderboard
         
+        self.assertFalse(TriviaGameSession.objects.filter(id=self.game.id).exists()) # Game is deleted from db
+    
