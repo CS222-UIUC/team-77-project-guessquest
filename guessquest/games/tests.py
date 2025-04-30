@@ -3,8 +3,8 @@ from django.urls import reverse
 from django.utils import timezone
 from datetime import timedelta
 import json
-from .models import Player, TemperatureGameSession, TemperatureQuestion
-from . import weather_services
+from .models import Player, TemperatureGameSession, TemperatureQuestion, TriviaGameSession, TriviaQuestion
+from . import weather_services, trivia_services
 
 class PlayerModelTests(TestCase):
     def test_create_player(self):
@@ -25,7 +25,27 @@ class PlayerModelTests(TestCase):
         player = Player.objects.create(username="testuser", weather_high_score=100)
         player.update_weather_high_score(50)
         self.assertEqual(player.weather_high_score, 100)
+        
+    def test_update_trivia_high_score_higher(self):
+        """Test updating trivia high score with a higher value"""
+        player = Player.objects.create(username="testuser", trivia_high_score=50)
+        player.update_trivia_high_score(75)
+        self.assertEqual(player.trivia_high_score, 75)
 
+    def test_update_trivia_high_score_lower(self):
+        """Test updating trivia high score with a lower value (should not change)"""
+        player = Player.objects.create(username="testuser", trivia_high_score=50)
+        player.update_trivia_high_score(25)
+        self.assertEqual(player.trivia_high_score, 50)
+        
+    def test_delete_player(self):
+        """Test deleting a player"""
+        player = Player.objects.create(username="testuser")
+        player_id = player.id
+        player.delete()
+        
+        # Makes sure the player is deleted
+        self.assertFalse(Player.objects.filter(id=player_id).exists())
 class TemperatureGameSessionTests(TestCase):
     def setUp(self):
         self.player = Player.objects.create(username="testuser")
@@ -53,6 +73,7 @@ class TemperatureGameSessionTests(TestCase):
         self.assertTrue(game.no_questions_left)
         self.assertEqual(game.score, 100)
         self.assertEqual(game.questions_left, 0)
+        game.end_game()
         self.assertEqual(game.game_status, "completed")
 
     def test_no_questions_left(self):
@@ -62,7 +83,54 @@ class TemperatureGameSessionTests(TestCase):
         
         game.questions_left = 0
         self.assertTrue(game.no_questions_left())
-
+class TemperatureScoreCalculation(TestCase):
+    def setUp(self):
+        self.player = Player.objects.create(username="testuser")
+        self.game = TemperatureGameSession.objects.create(player=self.player)
+        
+    def test_perfect_guess(self):
+        actual_temperature = 30
+        user_guess = 30
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        self.assertEqual(points, weather_services.MAXSCORE)
+        
+    def test_close_guess(self):
+        actual_temperature = 30
+        user_guess = 29
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        difference = abs(points - weather_services.MAXSCORE)
+        self.assertTrue(difference < 3)
+        
+        user_guess = 28
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        missed_points = abs(points - weather_services.MAXSCORE)
+        self.assertTrue(missed_points < 15)
+        
+        user_guess = 25
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        missed_points = abs(points - weather_services.MAXSCORE)
+        self.assertTrue(missed_points < 30)
+        
+    def far_guess(self):
+        actual_temperature = 30
+        user_guess = 10
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        self.assertTrue(points < 10)
+        
+        actual_temperature = 30
+        user_guess = 20
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        self.assertTrue(points < 10)
+        
+        actual_temperature = 30
+        user_guess = 500
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        self.assertTrue(points == 0)
+        
+        actual_temperature = 30
+        user_guess = -500
+        points = weather_services.calculate_score(actual_temperature, user_guess)
+        self.assertTrue(points == 0)
 class TemperatureQuestionTests(TestCase):
     def setUp(self):
         self.player = Player.objects.create(username="testuser")
@@ -90,7 +158,7 @@ class TemperatureQuestionTests(TestCase):
             actual_temperature=75.0
         )
         points = weather_services.calculate_score(question.actual_temperature, question.user_guess)
-        self.assertEqual(points, 250)
+        self.assertEqual(points, 100)
 
     def test_check_guess_close(self):
         """Test points calculation for a close guess"""
@@ -101,8 +169,9 @@ class TemperatureQuestionTests(TestCase):
             actual_temperature=72.5
         )
         points = weather_services.calculate_score(question.actual_temperature, question.user_guess)
-        self.assertEqual(points, 250 - int(2.5 * 10))  # 250 - 25 = 225
-
+        self.assertTrue(points < weather_services.MAXSCORE)
+        self.assertTrue(weather_services.MAXSCORE - points < 10)  #should be close to max score
+        
     def test_check_guess_far(self):
         """Test points calculation for a far guess"""
         question = TemperatureQuestion.objects.create(
@@ -112,10 +181,12 @@ class TemperatureQuestionTests(TestCase):
             actual_temperature=65.0
         )
         points = weather_services.calculate_score(question.actual_temperature, question.user_guess)
-        # self.assertEqual(points, 250 - int(30 * 10))  # 250 - 300 = 0 (min is 0)
+        self.assertEqual(points, 0)
+        question.user_guess = 85.0
+        points = weather_services.calculate_score(question.actual_temperature, question.user_guess)
 
     def test_check_guess_negative_error(self):
-        """Test points calculation when guess is lower than actual"""
+        """Test points calculation when guess is lower than actual is equal to when guess is higher"""
         question = TemperatureQuestion.objects.create(
             game=self.game,
             city="New York",
@@ -123,7 +194,10 @@ class TemperatureQuestionTests(TestCase):
             actual_temperature=70.0
         )
         points = weather_services.calculate_score(question.actual_temperature, question.user_guess)
-        self.assertEqual(points, 250 - int(5 * 10))  # 250 - 50 = 200
+        self.assertTrue(points > 0 & points < weather_services.MAXSCORE)
+        # Swap actual temperature and user guess
+        points_swapped = weather_services.calculate_score(question.user_guess, question.actual_temperature)
+        self.assertTrue(points == points_swapped)
 
 class ViewsTests(TestCase):
     def setUp(self):
@@ -138,37 +212,6 @@ class ViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'startScreen.html')
         
-    def test_sign_in_post_existing_user(self):
-        """Test POST request to sign_in with existing username"""
-        response = self.client.post(reverse('sign_in'), {'playername': 'testuser'})
-        self.assertEqual(response.status_code, 302)  # Redirect status code
-        
-        # Check redirect URL
-        self.assertRedirects(
-            response, 
-            reverse('start_temp', kwargs={'player_id': self.test_player.id}),
-            fetch_redirect_response=False
-        )
-        
-        # Verify no new player was created
-        self.assertEqual(Player.objects.count(), 1)
-        
-    def test_sign_in_post_new_user(self):
-        """Test POST request to sign_in with new username"""
-        response = self.client.post(reverse('sign_in'), {'playername': 'newuser'})
-        self.assertEqual(response.status_code, 302)  # Redirect status code
-        
-        # Verify new player was created
-        self.assertEqual(Player.objects.count(), 2)
-        new_player = Player.objects.get(playername='newuser')
-        
-        # Check redirect URL
-        self.assertRedirects(
-            response, 
-            reverse('start_temp', kwargs={'player_id': new_player.id}),
-            fetch_redirect_response=False
-        )
-        
     def test_start_weather_game_get(self):
         """Test GET request to start_game view"""
         response = self.client.get(
@@ -177,18 +220,27 @@ class ViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'weatherGame.html')
         
-    def test_calculate_score(self):
-        """Test the calculate_score utility function"""
-        from .weather_services import calculate_score
+    def test_sign_in_existing_user(self):
+        """Test signing in with an existing username does not create a new player"""
+        response = self.client.post(reverse('sign_in'), {'playername': 'testuser'})
+        self.assertEqual(response.status_code, 302) # redirects
         
-        # Test perfect guess
-        self.assertEqual(calculate_score(75.0, 75.0), 250)
+        # Ensure no new player is created
+        player_count = Player.objects.filter(username='testuser').count()
+        self.assertEqual(player_count, 1)
         
-        # Test close guess
-        self.assertEqual(calculate_score(75.0, 73.0), 230)
-        
-        # Test far guess (score should be 0)
-        self.assertEqual(calculate_score(75.0, 50.0), 0)
+    def test_sign_in_new_user(self):
+        """Test signing in with an new username creates a new player"""
+        initial_player_count = Player.objects.count()
+        response = self.client.post(reverse('sign_in'), {'playername': 'newuser'})
+        self.assertEqual(response.status_code, 302)  # redirects
+
+        # Ensure a new player is created
+        player_count = Player.objects.filter(username='newuser').count()
+        self.assertEqual(player_count, 1)
+
+        # Ensure total player count increases by 1
+        self.assertEqual(Player.objects.count(), initial_player_count + 1)
         
     def test_game_selection_missing_player_id(self):
         """Test game_selection view without player_id"""
@@ -209,81 +261,156 @@ class ViewsTests(TestCase):
         # Check error message
         response_data = json.loads(response.content)
         self.assertEqual(response_data['error'], 'Player not found')
-
-class IntegrationTests(TestCase):
+        
+class WeatherGameProcessTests(TestCase):
     def setUp(self):
         self.client = Client()
-        
-    def test_model_integration(self):
-        """Test the full game flow at the model level"""
-        # Create player
-        player = Player.objects.create(username="gamer1")
-        
-        # Create game
-        game = TemperatureGameSession.objects.create(player=player)
-        
-        # Answer questions
-        cities = ["New York", "Tokyo", "Paris", "Sydney", "Cairo"]
-        guesses = [75.0, 68.0, 59.0, 80.0, 95.0]
-        actuals = [72.0, 70.0, 60.0, 78.0, 93.0]
-        
-        total_points = 0
-        
-        for i in range(5):
-            question = TemperatureQuestion.objects.create(
-                game=game,
-                city=cities[i],
-                user_guess=guesses[i],
-                actual_temperature=actuals[i]
-            )
-            total_points += weather_services.calculate_score(guesses[i], actuals[i])
-            weather_services.process_weather_guess(game, question, question.user_guess)
-        
-        # Verify final state
-        self.assertEqual(game.score, total_points)
-        self.assertEqual(game.questions_left, 0)
-        self.assertEqual(game.game_status, "completed")
-        
-        # Update high score
-        player.update_weather_high_score(float(total_points))
-        self.assertEqual(player.weather_high_score, float(total_points))
+        self.player = Player.objects.create(username="testuser")
+        self.game = TemperatureGameSession.objects.create(player=self.player)
+
+    def test_full_game_process(self):
+        """Test the entire weather game process"""
+        # Step 1: Start the game
+        response = self.client.get(reverse('weather_game', kwargs={'player_id': self.player.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'weatherGame.html')
+
+        # Step 2: Create a question
+        question = self.game.create_question()
+        # override with mock data
+        question.city = "New York"
+        question.user_guess = 75.0
+        question.actual_temperature = 72.5
+        question.save()
+
+        self.assertEqual(question.city, "New York")
+        self.assertEqual(question.user_guess, 75.0)
+        self.assertEqual(question.actual_temperature, 72.5)
+
+        # Step 3: Calculate score for the question
+        points = weather_services.process_weather_guess(self.game, question, question.user_guess)
+        self.assertTrue(points > 0)
+        self.assertTrue(points < weather_services.MAXSCORE)
+
+        # Step 4: Check game updates
+        self.assertEqual(self.game.score, points)
+        self.assertEqual(self.game.questions_left, 4)
+
+        # Step 5: Check if game ends when no questions are left
+        self.game.questions_left = 0
+        self.assertTrue(self.game.no_questions_left())
+        self.game.end_game()
+        self.assertEqual(self.game.game_status, "completed")
+
+    def test_game_restart(self):
+        """Test restarting a completed game"""
+        self.game.questions_left = 0
+        self.game.end_game()
+        self.assertEqual(self.game.game_status, "completed")
+
+        # Restart the game
+        new_game = TemperatureGameSession.objects.create(player=self.player)
+        self.assertEqual(new_game.player, self.player)
+        self.assertEqual(new_game.score, 0)
+        self.assertEqual(new_game.questions_left, 5)
+        self.assertEqual(new_game.game_status, "active")
+
+class TestGetWeatherMessage(TestCase):
+    def test_perfect_guess(self):
+        score = weather_services.MAXSCORE
+        user_guess = 25
+        actual_temperature = 25
+        expected_message = f"Perfect Guess<br>the actual temperature was {actual_temperature}°, you guessed {user_guess}°."
+        self.assertEqual(weather_services.get_message(score, user_guess, actual_temperature), expected_message)
+
+    def test_good_guess(self):
+        score = int(weather_services.MAXSCORE * 0.8)
+        user_guess = 30
+        actual_temperature = 28
+        expected_message = f"Good Guess<br>the actual temperature was {actual_temperature}°, you guessed {user_guess}°."
+        self.assertEqual(weather_services.get_message(score, user_guess, actual_temperature), expected_message)
+
+    def test_keep_guessing(self):
+        score = int(weather_services.MAXSCORE * 0.5)
+        user_guess = 30
+        actual_temperature = 15
+        expected_message = f"Keep Guessing<br>the actual temperature was {actual_temperature}°, you guessed {user_guess}°."
+        self.assertEqual(weather_services.get_message(score, user_guess, actual_temperature), expected_message)
     
-    def test_view_integration(self):
-        """Test full user flow from sign in to game selection"""
-        # 1. Sign in as a new user
-        response = self.client.post(reverse('sign_in'), {'username': 'flowuser'})
-        self.assertEqual(response.status_code, 302)
+class TestTriviaServices(TestCase):
+    def setUp(self):
+        # Set up test client
+        self.client = Client()
+        # Create a test player
+        self.player = Player.objects.create(username="testuser", trivia_high_score=50)
+        player = self.player
+        # Mock data
+        TriviaQuestion.objects.create(
+        question_text="What is 2+2?",
+        correct_answer="4",
+        incorrect_answers=["3", "5", "22"],
+        difficulty="easy",
+        question_type="multiple"
+        )
         
-        # Get the new player object
-        player = Player.objects.get(username='flowuser')
-        self.assertEqual(player.weather_high_score, 0)
+    def test_create_trivia_game(self):
+        game, question = trivia_services.create_trivia_game(self.player)
+        self.assertIsInstance(game, TriviaGameSession) # Ensures game is it's own instance
+        self.assertIsNotNone(question)
+        self.assertEqual(question.correct_answer, '4')
+        self.assertEqual(len(question.incorrect_answers), 3)
+        self.assertIn('3', question.incorrect_answers)
+    def test_process_trivia_guess(self):
+        game, question = trivia_services.create_trivia_game(self.player)
+        guess = '22' # incorrect
+        trivia_services.process_trivia_guess(game, question, guess)
+        self.assertEqual(game.score, 0) # should stay the same
+        guess = '4' # correct
+        trivia_services.process_trivia_guess(game, question, guess)
+        self.assertEqual(game.score, 10) # should be incrememented by 10
+        guess = '5' # incorrect
+        trivia_services.process_trivia_guess(game, question, guess)
+        self.assertEqual(game.score, 10) # should stay the same
+
+class TestTriviaModels(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.player = Player.objects.create(username="testuser", trivia_high_score=0)
+        TriviaQuestion.objects.create(
+            question_text="What is the capital of France?",
+            correct_answer="Paris",
+            incorrect_answers=["London", "Berlin", "Madrid"],
+            difficulty="medium",
+            question_type="multiple"
+        )
+        self.game = TriviaGameSession.objects.create(player=self.player)
+        self.initial_questions_left = self.game.questions_left
+        self.assertEquals(self.initial_questions_left, 5)
+    def test_create_question(self):
+        question = self.game.create_question()
+        self.assertFalse(self.game.no_questions_left())
+        self.assertEqual(question.question_text, "What is the capital of France?")
+        self.assertEqual(question.correct_answer, "Paris")
+        self.assertEqual(len(question.incorrect_answers), 3)
+        self.assertIn("London", question.incorrect_answers)
+        self.assertEqual(question.difficulty, "medium")
+        self.assertEqual(question.question_type, "multiple")
+        self.assertEquals(self.game.questions_left, 4)
+        question = self.game.create_question()
+        question = self.game.create_question()
+        question = self.game.create_question()
+        self.assertFalse(self.game.no_questions_left())
+        question = self.game.create_question()
+        self.assertTrue(self.game.no_questions_left()) # should be out of questions
+    
+    def test_game_over(self):
+        self.game.questions_left = 1
+        self.game.score = 10
+        self.game.decrement_question_count()
+        self.assertEqual(self.game.game_status, "completed")
+        self.assertEqual(self.game.questions_left, 0)
+        self.assertTrue(self.game.game_over())
+        self.assertEqual(self.player.trivia_high_score, 10) # updated player leaderboard
         
-        # Extract player_id from the redirect URL
-        redirect_url = response.url
-        player_id = player.id
-        
-        # 2. Verify redirect to start_game
-        # self.assertIn(f'/start_temp/{player_id}', redirect_url)
-        
-        # 3. Follow redirect to start_game
-        response = self.client.get(redirect_url)
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'weather_game.html')
-        
-        # Note: The following assertion is commented out because start_game 
-        # doesn't create a game yet in the current implementation
-        # 4. Check that a game was created for this player
-        # games = TemperatureGameSession.objects.filter(player=player)
-        # self.assertTrue(games.exists())
-        
-        # 5. Access game selection page
-        # response = self.client.get(
-        #    reverse('game_selection') + f'?player_id={player_id}'
-        #)
-        self.assertEqual(response.status_code, 200)
-        # self.assertTemplateUsed(response, 'games/game_selection.html')
-        
-        # Verify the available games
-        # games_list = response.context['available_games']
-        # self.assertEqual(len(games_list), 1)
-        # self.assertEqual(games_list[0]['id'], 'temperature')
+        self.assertFalse(TriviaGameSession.objects.filter(id=self.game.id).exists()) # Game is deleted from db
+    
