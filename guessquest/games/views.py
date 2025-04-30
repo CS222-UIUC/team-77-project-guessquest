@@ -4,7 +4,6 @@ from .models import Player, TemperatureGameSession, TemperatureQuestion
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .trivia_services import TriviaService
 from . import weather_services
 from . import trivia_services
 
@@ -123,20 +122,3 @@ def game_selection(request):
         ]
     })
 
-class TriviaAPIView(APIView):
-    def get(self, request):
-        # Get parameters from request
-        amount = request.query_params.get('amount', 10)
-        category = request.query_params.get('category', None)
-        difficulty = request.query_params.get('difficulty', None)
-        question_type = request.query_params.get('type', None)
-        
-        # Fetch questions from the service
-        questions = TriviaService.get_questions(
-            amount=amount, 
-            category=category,
-            difficulty=difficulty,
-            question_type=question_type
-        )
-        
-        return Response(questions)

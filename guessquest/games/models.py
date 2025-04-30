@@ -1,7 +1,5 @@
 from django.db import models
 from . import weather_services
-#TODO LEADERBOARD
-
 
 class Player(models.Model):
     username = models.CharField(max_length=15)

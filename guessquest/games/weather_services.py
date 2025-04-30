@@ -89,7 +89,7 @@ def get_message(score, user_guess, actual_temperature):
     message = ""
     if(score == MAXSCORE):
         message = "Perfect Guess<br>"
-    elif(score > MAXSCORE * 0.7):
+    elif(score > MAXSCORE * 0.6):
         message = "Good Guess<br>"
     else:
         message = "Keep Guessing<br>"
