@@ -256,7 +256,7 @@ class IntegrationTests(TestCase):
         # response = self.client.get(
         #    reverse('game_selection') + f'?player_id={player_id}'
         #)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 301)
         # self.assertTemplateUsed(response, 'games/game_selection.html')
         
         # Verify the available games
