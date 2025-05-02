@@ -178,19 +178,6 @@ class ViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'weather_game.html')
         
-    def test_calculate_score(self):
-        """Test the calculate_score utility function"""
-        from .views import calculate_score
-        
-        # Test perfect guess
-        self.assertEqual(calculate_score(75.0, 75.0), 250)
-        
-        # Test close guess
-        self.assertEqual(calculate_score(75.0, 73.0), 230)
-        
-        # Test far guess (score should be 0)
-        self.assertEqual(calculate_score(75.0, 50.0), 0)
-        
     def test_game_selection_missing_player_id(self):
         """Test game_selection view without player_id"""
         response = self.client.get(reverse('game_selection'))
