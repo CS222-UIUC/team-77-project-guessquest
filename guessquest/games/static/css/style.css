@@ -28,7 +28,7 @@ body {
 
 .start-screen #player-enter {
   font-size: 30px;
-  background-color: black;
+  background-color: rgb(53,2,104);
   border: none;
   color: white;
   cursor: pointer;
@@ -40,7 +40,7 @@ body {
   margin: 10px;
   cursor: pointer;
   background-color: white;
-  border: 2px solid black;
+  border: 2px solid rgb(53,2,104);
 }
 
 .options button:hover {
@@ -60,7 +60,7 @@ body {
   padding: 20px;
   cursor: pointer;
   background-color: white;
-  border: 2px solid black;
+  border: 2px solid rgb(53,2,104);
 }
 
 .weather #question {
@@ -69,7 +69,7 @@ body {
   padding: 20px;
   font-size: 50px;
   border-radius: 8px;
-  border: 2px solid black;
+  border: 2px solid rgb(53,2,104);
   text-align: center;
   align-items: center;
   justify-content: center;
@@ -78,7 +78,7 @@ body {
   background-image: url("image1.jpg");
   background-size: cover;
   backdrop-filter: blur;
-  color: black;
+  color: rgb(53,2,104);
 }
 
 .weather #playerAnswer {
@@ -102,11 +102,36 @@ body {
   padding: 20px;
   font-size: 20px;
   padding: 10px;
-  background-color: black;
+  background-color: rgb(53,2,104);
   color: white;
 }
 
 .weather #guess-button:hover {
   opacity: 0.85;
   cursor: pointer;
+}
+
+.column {
+  float: left;
+  width: 30%;
+  padding: 20px;
+  text-align: center;
+}
+
+.row::after {
+  content: "";
+  display: table;
+  clear: both;
+}   
+
+.button {
+  padding: 20px;
+  font-size: 20px;
+  margin: 10px;
+  cursor: pointer;
+  background-color: white;
+  border: 2px solid rgb(53,2,104);
+  font-family: "Courier New", Courier, monospace;
+  text-decoration: none;
+  color: rgb(53,2,104);
 }

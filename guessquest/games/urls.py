@@ -24,5 +24,4 @@ urlpatterns = [
     path('games/', views.game_selection, name='game_selection'),
     path('temperature/<int:player_id>/', views.weather_game, name='weather_game'),
     path('trivia/<int:player_id>/', views.trivia_game, name='trivia_game'),
-    path('spotify/<int:player_id>/', views.spotify_game, name='spotify_game')
 ]
