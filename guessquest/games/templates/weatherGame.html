@@ -9,9 +9,22 @@
   </head>
   <body>
     {% if feedback %}
+
     <div class="weather">
-      <h3 id="score">Score: {{score}}</h3>
-      <p>Question {{questionNum}}</p>
+      <p id="question-num">Question {{questionsNum}}</p>
+      <div class="progress-container">
+        {% if questionsNum == 1 %}
+        <div class="progress-bar" style="width: 20%"></div>
+        {% elif questionsNum == 2 %}
+        <div class="progress-bar" style="width: 40%"></div>
+        {% elif questionsNum == 3 %}
+        <div class="progress-bar" style="width: 60%"></div>
+        {% elif questionsNum == 4 %}
+        <div class="progress-bar" style="width: 80%"></div>
+        {% elif questionsNum == 5 %}
+        <div class="progress-bar" style="width: 100%"></div>
+        {% endif %}
+      </div>
       <p id="question">Guess the weather in {{city}}.</p>
       <form id="playerAnswer" method="post">
         {% csrf_token %}
@@ -41,9 +54,25 @@
     </div>
     {% else %}
     <div class="weather">
-      <h3 id="score">Score: {{score}}</h3>
-      <p>Question {{questionNum}}</p>
-      <p id="question">{{message}}</p>
+      <p id="question-num">Question {{questionsNum}}</p>
+      <div class="progress-container">
+        {% if questionsNum == 1 %}
+        <div class="progress-bar" style="width: 20%"></div>
+        {% elif questionsNum == 2 %}
+        <div class="progress-bar" style="width: 40%"></div>
+        {% elif questionsNum == 3 %}
+        <div class="progress-bar" style="width: 60%"></div>
+        {% elif questionsNum == 4 %}
+        <div class="progress-bar" style="width: 80%"></div>
+        {% elif questionsNum == 5 %}
+        <div class="progress-bar" style="width: 100%"></div>
+        {% endif %}
+      </div>
+      <p id="question">
+        Your Total Score: <span id="current-score">0</span>
+        <span id="message">{{ message }}</span>
+        <img id="gif" src="{% static gif %}" />
+      </p>
       <form method="post">
         {% csrf_token %}
         <button id="guess-button" name="next" type="submit">
@@ -51,8 +80,27 @@
         </button>
       </form>
     </div>
-    {% endif %}
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const currentScoreDisplay = document.getElementById("current-score");
+        const score = {{ score }};
+        const duration = 500;
+        const startTime = performance.now();
 
-    <p id="message"></p>
+        function updateScore(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const currentScore = Math.floor(score * progress);
+          currentScoreDisplay.textContent = currentScore;
+          if (progress < 1) {
+            requestAnimationFrame(updateScore);
+          } else {
+            currentScoreDisplay.textContent = score;
+          }
+        }
+        requestAnimationFrame(updateScore);
+      });
+    </script>
+    {% endif %}
   </body>
 </html>
