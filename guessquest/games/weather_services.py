@@ -13,7 +13,13 @@ cities = [
     "San Antonio", "San Diego", "Dallas", "Austin", "Seattle", 
     "Denver", "Boston", "Las Vegas"
 ]
+perfectGuess = ["Perfect", "Your luck is incredible", "Now that's a GUESS"]
+goodGuess = ["Nice Guess", "That was close", "How did you know?", "Cool", "Awesome"]
+badGuess = ["You can guess better", "Better luck next time", "Not even close"]
 
+perfectGif = ['css/gifs/perfect/1.gif', 'css/gifs/perfect/2.gif', 'css/gifs/perfect/3.gif']
+goodGif = ['css/gifs/good/1.gif', 'css/gifs/good/2.gif', 'css/gifs/good/3.gif']
+badGif = ['css/gifs/bad/1.gif', 'css/gifs/bad/2.gif', 'css/gifs/bad/3.gif']
 class CityNotFoundError(Exception):
     pass
 class CoordinatesNotFoundError(Exception):
@@ -74,15 +80,19 @@ def build_game_context(score, questions_left, city, actual_temperature, feedback
 def get_feedback(score, player_score, questions_left, feedback):
     message = ""
     if(score == 250):
-        message = "Perfect Guess"
+        message = random.choice(perfectGuess)
+        gif = random.choice(perfectGif)
     elif(score > 150):
-        message = "Good Guess"
+        message = random.choice(goodGuess)
+        gif = random.choice(goodGif)
     else:
-        message = "Keep Guessing"
+        message = random.choice(badGuess)
+        gif = random.choice(badGif)
     
     return{
         'score': player_score,
         'questionsNum': 5 - questions_left,
         'message': message,
-        'feedback' : feedback
+        'feedback' : feedback,
+        'gif': gif
     }
