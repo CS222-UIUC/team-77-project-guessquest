@@ -14,12 +14,18 @@ body {
   min-height: 100vh;
 }
 
+body.start {
+  background-image: url("start_bg.jpeg");
+  background-size: 100% auto;
+}
+
 .start-screen {
   font-size: 75px;
 }
 
 .start-screen #player-form {
   font-size: 35px;
+  display: none;
 }
 
 .start-screen #playername {
@@ -27,7 +33,8 @@ body {
 }
 
 .start-screen #player-enter {
-  font-size: 30px;
+  font-size: 25px;
+  padding: 5px;
   background-color: black;
   border: none;
   color: white;
@@ -109,4 +116,24 @@ body {
 .weather #guess-button:hover {
   opacity: 0.85;
   cursor: pointer;
+}
+
+#question-num {
+  font-size: 30px;
+}
+
+.progress-container {
+  background-color: white;
+  border: 2px solid black;
+  border-radius: 10px;
+  width: 100%;
+  height: 30px;
+  margin: 10px 0 20px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  background-color: rgb(0, 229, 255);
+  height: 100%;
+  transition: width 0.3s ease;
 }
