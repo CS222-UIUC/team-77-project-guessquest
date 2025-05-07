@@ -93,7 +93,7 @@ def build_game_context(score, questions_left, city, actual_temperature, display_
     return context
 
 def get_message(score, user_guess, actual_temperature):
-    statistics = f'the actual temperature was {actual_temperature}°, you guessed {user_guess}°.'
+    statistics = f'The actual temperature was {actual_temperature}°, you guessed {user_guess}°.'
     difference = abs(actual_temperature - user_guess)
     message = ""
     if (difference < 1):
@@ -105,8 +105,8 @@ def get_message(score, user_guess, actual_temperature):
     else:
         message = random.choice(badGuess)
         gif = random.choice(badGif)
-    message += statistics
-    return {'message': message,
+    message += ('\n' + '\n' + statistics)
+    return {'message': message + '\n',
             'gif': gif
     }
 

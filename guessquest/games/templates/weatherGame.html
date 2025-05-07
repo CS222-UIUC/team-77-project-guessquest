@@ -70,7 +70,7 @@
       </div>
       <p id="question">
         Your Total Score: <span id="current-score">0</span>
-        <span id="message">{{ message }}</span>
+        <span id="message">{{ message|linebreaksbr|safe }}</span>
         <img id="gif" src="{% static gif %}" />
       </p>
       <form method="post">
