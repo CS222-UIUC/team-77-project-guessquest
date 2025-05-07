@@ -98,12 +98,14 @@ def game_selection(request):
                 'id': 'temperature',
                 'name': 'Weather Game',
                 'description': 'Guess the correct temperature and earn points!',
+                'image': 'css/selectionImages/weather.jpg',
                 'url': f'/temperature/{player_id}'
             },
             {
                 'id': 'trivia',
                 'name': 'Trivia Game',
                 'description': 'Trivia Game!',
+                'image': 'css/selectionImages/trivia.jpg',
                 'url': f'/trivia/{player_id}'
             }
         ]

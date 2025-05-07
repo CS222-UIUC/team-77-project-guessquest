@@ -3,17 +3,98 @@
 <html>
   <head>
     <title>Home Page</title>
-    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+    <style type="text/css">
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        font-family: "Nimbus Mono PS", "Courier New", monospace;
+        background-image: url("{% static 'css/selection_bg.jpg' %}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        color: white;
+      }
+
+      .header {
+        padding: 50px;
+        text-align: center;
+        color: black;
+        font-size: 20px;
+      }
+
+      .game-container {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 150px;
+        padding: 20px;
+      }
+
+      .game-card {
+        background-color: white;
+        width: 300px;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        transition: transform 0.2s;
+      }
+
+      .game-card:hover {
+        transform: scale(1.03);
+      }
+
+      .game-image {
+        width: 100%;
+        height: 300px;
+        object-fit: cover;
+        margin-bottom: 15px;
+      }
+
+      .game-title {
+        font-size: 20px;
+        margin-bottom: 15px;
+        font-weight: bold;
+        color: black;
+      }
+
+      .button {
+        background-color: black;
+        border: none;
+        padding: 12px 20px;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background-color 0.3s;
+      }
+
+      .button:hover {
+        opacity: 0.8;
+      }
+    </style>
   </head>
   <body>
     <div class="header">
-      <h1>Choose Game to Play!</h1>
+      <h1>Hello player {{player}}</h1>
+      <h1>Choose a Game to Play!</h1>
     </div>
-    {% for game in available_games %}
-    <br />
-    <div class="column">
-      <a href="{{game.url}}" class="button">{{game.name}}</a>
+
+    <div class="game-container">
+      {% for game in available_games %}
+      <div class="game-card">
+        <!-- Replace with actual static image path per game -->
+        <img
+          src="{% static game.image %}"
+          alt="{{ game.name }}"
+          class="game-image"
+        />
+
+        <div class="game-title">{{ game.name }}</div>
+        <a href="{{ game.url }}" class="button">Play Now</a>
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
   </body>
 </html>

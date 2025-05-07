@@ -15,7 +15,15 @@ cities = [
     "Denver", "Boston", "Las Vegas"
 ]
 
+# Scoring
 MAXSCORE = 100
+# Message feedback
+perfectGuess = ["Perfect", "Your luck is incredible", "Now that's a GUESS"]
+goodGuess = ["Nice Guess", "That was close", "How did you know?", "Cool", "Awesome"]
+badGuess = ["You can guess better", "Better luck next time", "Not even close"]
+perfectGif = ['css/gifs/perfect/1.gif', 'css/gifs/perfect/2.gif', 'css/gifs/perfect/3.gif']
+goodGif = ['css/gifs/good/1.gif', 'css/gifs/good/2.gif', 'css/gifs/good/3.gif']
+badGif = ['css/gifs/bad/1.gif', 'css/gifs/bad/2.gif', 'css/gifs/bad/3.gif']
 
 class CityNotFoundError(Exception):
     pass
@@ -77,10 +85,11 @@ def build_game_context(score, questions_left, city, actual_temperature, display_
             'questionsNum': 5 - questions_left,
             'city': city,
             'actualTemperature' : actual_temperature,
-            'feedback' : display_feedback,
+            'feedback' : display_feedback
         }
     if message is not None:
-        context['message'] = message
+        context['message'] = message['message']
+        context['gif'] = message['gif']
     return context
 
 def get_message(score, user_guess, actual_temperature):
@@ -88,11 +97,16 @@ def get_message(score, user_guess, actual_temperature):
     difference = abs(actual_temperature - user_guess)
     message = ""
     if (difference < 1):
-        message = "Perfect Guess<br>"
+        message = random.choice(perfectGuess)
+        gif = random.choice(perfectGif)
     elif(difference <= 5):
-        message = "Good Guess<br>"
+        message = random.choice(goodGuess)
+        gif = random.choice(goodGif)
     else:
-        message = "Keep Guessing<br>"
-        
+        message = random.choice(badGuess)
+        gif = random.choice(badGif)
     message += statistics
-    return message
+    return {'message': message,
+            'gif': gif
+    }
+
