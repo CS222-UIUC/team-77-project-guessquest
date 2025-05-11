@@ -1,0 +1,60 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leaderboard</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+    <style>
+      body {
+        padding: 40px;
+      }
+
+      th {
+        background-color: black;
+        color: white;
+        padding: 12px;
+        font-size: 1.1em;
+      }
+
+      td {
+        background-color: white;
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+      }
+    </style>
+  </head>
+  <body id="leaderboard-bg">
+    <h1>Top 10 Players</h1>
+    <div>
+      <table>
+        <thead>
+          <tr>
+            <th>Rank #</th>
+            <th>Username</th>
+            <th>Hi-Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for player in leaderboard %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ player.username }}</td>
+            <td>{{ player.high_score }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="end-options">
+      <form method="get" action="{% url 'game_selection' %}">
+        <input type="hidden" name="player_id" value="{{ id }}" />
+        <button id="guess-button" type="submit">Selection Page</button>
+      </form>
+      <form method="get" action="{% url 'weather_game' player_id=id %}">
+        <button id="guess-button" type="submit">Play Again</button>
+      </form>
+    </div>
+  </body>
+</html>
