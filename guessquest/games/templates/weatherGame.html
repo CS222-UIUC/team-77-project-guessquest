@@ -7,7 +7,7 @@
     <title>Weather game</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}" />
   </head>
-  <body>
+  <body id="weather-bg">
     {% if feedback %}
 
     <div class="weather">
@@ -40,7 +40,10 @@
       </form>
     </div>
     {% elif end %}
-    <div class="weather">
+    <h id="final_score">
+      Your Final Score: {{final_score}}</span>
+    </h>
+    <div class="end-options">
       <form method="get" action="{% url 'game_selection' %}">
         <input type="hidden" name="player_id" value="{{ id }}" />
         <button id="guess-button" type="submit">Selection Page</button>
@@ -48,9 +51,10 @@
       <form method="get" action="{% url 'weather_game' player_id=id %}">
         <button id="guess-button" type="submit">Play Again</button>
       </form>
-      <form method="get">
+      <form method="get" action="{% url 'leaderboard' player_id=id %}">
         <button id="guess-button" type="submit">Leaderboard</button>
       </form>
+      
     </div>
     {% else %}
     <div class="weather">
@@ -69,7 +73,7 @@
         {% endif %}
       </div>
       <p id="question">
-        Your Total Score: <span id="current-score">0</span>
+        Your Score: <span id="current-score">0</span>
         <span id="message">{{ message }}</span>
         <img id="gif" src="{% static gif %}" />
       </p>
