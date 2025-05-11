@@ -6,7 +6,6 @@ from django.views.decorators.http import require_POST
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .trivia_service import TriviaService
 import random
 import requests
 from . import weather_services
@@ -30,25 +29,30 @@ def weather_game(request, player_id):
             guess = int(request.POST.get('guess'))
             player, game, question = weather_services.get_weather_post_data(request)
             score = weather_services.process_weather_guess(game, question, guess)
-            feedback = weather_services.get_feedback(score, game.score, game.questions_left, False)
+            feedback = weather_services.get_feedback(score, game.questions_left, question.actual_temperature, guess, False)
             return render(request, "weatherGame.html", feedback)
         elif 'next' in request.POST:
             player, game, question = weather_services.get_weather_post_data(request)
             if game.no_questions_left():
                 game.end_game()
                 end = True
-                info = {'end': end, 'id' : player.id}
+                info = {'end': end, 'id' : player.id, 'final_score' : game.score}
                 return render(request, "weatherGame.html", info)
             next_question = game.create_question()
             weather_services.store_weather_session_question(request, next_question)
             info = weather_services.build_game_context(game.score, game.questions_left, next_question.city, next_question.actual_temperature, True)
             return render(request, "weatherGame.html", info)
 
+def leaderboard(request, player_id):
+    if request.method == "GET":
+        top_ten = Player.objects.order_by('-high_score')[:10]
+        return render(request, 'leaderboard.html', {'id': player_id, 'leaderboard': top_ten})
+    player = get_object_or_404(Player, id=player_id)
 
         
 def trivia_game(request, player_id):
     if request.method == "GET":
-        return render(request, "triviaGame.html")
+        return render(request, "triviaGame.html", {'id': player_id})
     player = get_object_or_404(Player, id=player_id)
 
 def spotify_game(request, player_id):
@@ -90,31 +94,6 @@ def game_selection(request):
                 'description': 'Trivia Game!',
                 'image': 'css/selectionImages/trivia.jpg',
                 'url': f'/trivia/{player_id}'
-            },
-            {
-                'id': 'spotify',
-                'name': 'Spotify Game',
-                'description': 'Spotify Game!',
-                'image': 'css/selectionImages/spotify.jpg',
-                'url': f'/spotify/{player_id}'
             }
         ]
     })
-
-class TriviaAPIView(APIView):
-    def get(self, request):
-        # Get parameters from request
-        amount = request.query_params.get('amount', 10)
-        category = request.query_params.get('category', None)
-        difficulty = request.query_params.get('difficulty', None)
-        question_type = request.query_params.get('type', None)
-        
-        # Fetch questions from the service
-        questions = TriviaService.get_questions(
-            amount=amount, 
-            category=category,
-            difficulty=difficulty,
-            question_type=question_type
-        )
-        
-        return Response(questions)
