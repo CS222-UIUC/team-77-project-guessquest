@@ -14,6 +14,12 @@
       <div id="question" class="question"></div>
       <div id="options" class="options"></div>
     </div>
-    <button class="restart hidden" onclick="restartGame()">Play Again</button>
+    <div id="options" class="options restart hidden">
+      <button onclick="restartGame()">Play Again</button>
+      <form method="get" action="{% url 'game_selection' %}">
+        <input type="hidden" name="player_id" value="{{ id }}" />
+        <button id="guess-button" type="submit">Selection Page</button>
+      </form>
+    </div>
   </body>
 </html>
