@@ -4,7 +4,7 @@ from . import models
 import json
 import random
 from django.shortcuts import get_object_or_404
-
+import math
 # Global 
 cities = [
     "New York", "Paris", "Tokyo", "London", "Los Angeles", "Bangkok", 
@@ -43,8 +43,13 @@ def city_to_coords(city) :
 def get_random_city() :
     return random.choice(cities)   
 def calculate_score(actual_temp, user_guess):
+    actual_temp = int(actual_temp)
     error = abs(actual_temp - user_guess)
-    return max(0, 250 - int(error * 10))
+    sigma = 12
+    score = int(100 * math.exp(-(error**2) / (2 * sigma**2)))
+    if error == 0:
+        score = 100
+    return score
 def process_weather_guess(game, question, guess):
     score = calculate_score(question.actual_temperature, guess)
     game.update_score(score)
@@ -77,20 +82,21 @@ def build_game_context(score, questions_left, city, actual_temperature, feedback
             'actualTemperature' : actual_temperature,
             'feedback' : feedback
         }
-def get_feedback(score, player_score, questions_left, feedback):
+def get_feedback(score, questions_left, actual_temperature, user_guess, feedback):
+    statistics = f'The actual temperature was {actual_temperature}°, you guessed {user_guess}°.'
     message = ""
-    if(score == 250):
+    if(score >= 95):
         message = random.choice(perfectGuess)
         gif = random.choice(perfectGif)
-    elif(score > 150):
+    elif(score >= 80):
         message = random.choice(goodGuess)
         gif = random.choice(goodGif)
     else:
         message = random.choice(badGuess)
         gif = random.choice(badGif)
-    
+    message += '.\n' + statistics
     return{
-        'score': player_score,
+        'score': score,
         'questionsNum': 5 - questions_left,
         'message': message,
         'feedback' : feedback,
