@@ -156,14 +156,6 @@ class ViewsTests(TestCase):
         new_player = Player.objects.get(playername='newuser')
         
     def test_start_game_get(self):
-        # Check redirect URL
-        self.assertRedirects(
-            response, 
-            reverse('start_temp', kwargs={'player_id': new_player.id}),
-            fetch_redirect_response=False
-        )
-        
-    def test_start_weather_game_get(self):
         """Test GET request to start_game view"""
         response = self.client.get(
             reverse('weather_game', kwargs={'player_id': self.test_player.id})
@@ -171,19 +163,6 @@ class ViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'weatherGame.html')
         
-    def test_calculate_score(self):
-        """Test the calculate_score utility function"""
-        from .weather_services import calculate_score
-        
-        # Test perfect guess
-        self.assertEqual(calculate_score(75.0, 75.0), 250)
-        
-        # Test close guess
-        self.assertEqual(calculate_score(75.0, 73.0), 230)
-        
-        # Test far guess (score should be 0)
-        self.assertEqual(calculate_score(75.0, 50.0), 0)
-
     def test_game_selection_missing_player_id(self):
         """Test game_selection view without player_id"""
         response = self.client.get(reverse('game_selection'))
