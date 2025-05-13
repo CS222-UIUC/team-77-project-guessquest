@@ -19,7 +19,10 @@ from django.urls import path
 from games import views
 
 urlpatterns = [
-    path('', views.sign_in, name='sign_in'),
-    path('temperature/<int:player_id>/', views.start_game, name='start_temp'),
+    path('', views.sign_in, name='default_sign_in'),
+    path('sign-in/', views.sign_in, name='sign_in'),
     path('games/', views.game_selection, name='game_selection'),
+    path('temperature/<int:player_id>/', views.weather_game, name='weather_game'),
+    path('trivia/<int:player_id>/', views.trivia_game, name='trivia_game'),
+    path('spotify/<int:player_id>/', views.spotify_game, name='spotify_game')
 ]
