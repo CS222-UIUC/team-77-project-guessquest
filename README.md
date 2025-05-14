@@ -82,6 +82,7 @@ Follow the instructions on [this page](https://www.python.org/downloads/) to dow
 ### Clone the repository
 
 Start by cloning the repository using any method you like.
+
 Command line code using git to clone:
 
 ```bash
