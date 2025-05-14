@@ -18,8 +18,7 @@ View the full project proposal [here](https://docs.google.com/document/d/1nmonhs
 
 # Project Installation Instructions
 
-Follow the steps below to setup and run the game in your local computer. \
-The advantage of running it on your local computer is that you can modify or add to the the list of images, cities, and responses for the weather game.
+Follow the steps below to setup and run the game in your local computer. The advantage of running it on your local computer is that you can modify or add to the the list of images, cities, and responses for the weather game.
 
 ## Set up using Miniconda
 
@@ -29,7 +28,8 @@ Follow the instructions on [this page](https://www.anaconda.com/docs/getting-sta
 
 ### Clone the repository
 
-Start by cloning the repository using any method you like. \
+Start by cloning the repository using any method you like.
+
 Command line code using git to clone:
 
 ```bash
@@ -81,7 +81,7 @@ Follow the instructions on [this page](https://www.python.org/downloads/) to dow
 
 ### Clone the repository
 
-Start by cloning the repository using any method you like. \
+Start by cloning the repository using any method you like.
 Command line code using git to clone:
 
 ```bash
